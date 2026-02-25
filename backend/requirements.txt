@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+motor
+pymongo
+google-genai
+numpy
+python-bidi
+pydantic-settings
+python-dotenv
