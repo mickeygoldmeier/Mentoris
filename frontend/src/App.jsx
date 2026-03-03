@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import './index.css';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import Auth from './components/Auth';
+import Header from './components/Header';
+import MentorCard from './components/MentorCard';
+import ChatWindow from './components/ChatWindow';
 
 function App() {
   const [mentors, setMentors] = useState([]);
@@ -30,7 +32,6 @@ function App() {
       .then(data => setMentors(data))
       .catch(err => console.error("Error fetching mentors:", err));
 
-    // If logged in, fetch history
     if (currentUser) {
       loadHistory(currentUser.user_id);
     }
@@ -143,203 +144,58 @@ function App() {
 
   if (!currentUser) {
     return (
-      <div className="auth-overlay">
-        <form className="auth-form" onSubmit={handleAuth}>
-          <div className="auth-header">
-            <h2>Mentoris</h2>
-            <p className="subtitle">
-              {authMode === 'login'
-                ? 'התחברו כדי למצוא את המנטור המושלם עבורכם'
-                : 'הצטרפו לקהילה שלנו ומצאו מנטור עוד היום'}
-            </p>
-          </div>
-
-          {authError && <div style={{ color: '#ef4444', textAlign: 'center', fontSize: '0.9rem' }}>{authError}</div>}
-
-          <div className="form-group">
-            <input
-              type="email"
-              placeholder="אימייל"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <input
-              type="password"
-              placeholder="סיסמה"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-            />
-          </div>
-
-          {authMode === 'signup' && (
-            <div className="mentor-signup-toggle">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={isMentor}
-                  onChange={e => setIsMentor(e.target.checked)}
-                />
-                אני רוצה להצטרף כמנטור
-              </label>
-            </div>
-          )}
-
-          {authMode === 'signup' && isMentor && (
-            <div className="mentor-extra-fields">
-              <div className="form-group">
-                <input
-                  type="text"
-                  placeholder="שם / טוויטר"
-                  value={mentorName}
-                  onChange={e => setMentorName(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <input
-                  type="text"
-                  placeholder="תחומי מנטורינג (למשל: Frontend, Python)"
-                  value={mentorFields}
-                  onChange={e => setMentorFields(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <textarea
-                  placeholder="רקע רלוונטי"
-                  value={mentorBackground}
-                  onChange={e => setMentorBackground(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <input
-                  type="text"
-                  placeholder="איך ליצור קשר (לינק או פרטים)"
-                  value={mentorContact}
-                  onChange={e => setMentorContact(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-          )}
-
-          <button type="submit">
-            {authMode === 'login' ? 'התחברות' : (isMentor ? 'הרשמה כמנטור' : 'יצירת חשבון')}
-          </button>
-
-          <div className="toggle-auth">
-            {authMode === 'login' ? (
-              <p>אין לכם חשבון? <span onClick={() => { setAuthMode('signup'); setIsMentor(false); }}>הירשמו כאן</span></p>
-            ) : (
-              <p>כבר יש לכם חשבון? <span onClick={() => { setAuthMode('login'); setIsMentor(false); }}>התחברו כאן</span></p>
-            )}
-          </div>
-        </form>
-      </div>
+      <Auth
+        authMode={authMode}
+        setAuthMode={setAuthMode}
+        email={email}
+        setEmail={setEmail}
+        password={password}
+        setPassword={setPassword}
+        authError={authError}
+        handleAuth={handleAuth}
+        isMentor={isMentor}
+        setIsMentor={setIsMentor}
+        mentorName={mentorName}
+        setMentorName={setMentorName}
+        mentorFields={mentorFields}
+        setMentorFields={setMentorFields}
+        mentorBackground={mentorBackground}
+        setMentorBackground={setMentorBackground}
+        mentorContact={mentorContact}
+        setMentorContact={setMentorContact}
+      />
     );
   }
 
   return (
     <div className="container">
-      <div className="user-profile">
-        <span className="user-email">{currentUser.user_id}</span>
-        <button className="logout-btn" onClick={handleLogout}>התנתקות</button>
-      </div>
-      <header>
-        <h1>Mentoris</h1>
-        <p>מצאו את המנטור המושלם עבורכם</p>
-      </header>
-
-      <section className="search-section">
-        <input
-          type="text"
-          placeholder="חפשו לפי טכנולוגיה, תחום או שם..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </section>
+      <Header
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        currentUser={currentUser}
+        handleLogout={handleLogout}
+      />
 
       <div className="mentor-grid">
         {filteredMentors.map((mentor, index) => (
-          <div className="mentor-card" key={index} style={{ animationDelay: `${index * 0.05}s` }}>
-            <div className="mentor-card-header">
-              <div className="mentor-name">{mentor["טוויטר / שם"] || mentor.name || "אנונימי"}</div>
-              {mentor.role && <div className="mentor-role-badge">{mentor.role}</div>}
-            </div>
-
-            {mentor.summary && <div className="mentor-summary">{mentor.summary}</div>}
-
-            <div className="mentor-fields">
-              <strong>תחומי התמחות:</strong> {mentor["באיזה תחומים אתם מציעים מנטורינג?"] || mentor.fields}
-            </div>
-
-            <div className="mentor-background">
-              <strong>רקע:</strong> {mentor["רקע רלוונטי"] || mentor.background}
-            </div>
-
-            {mentor.tags && mentor.tags.length > 0 && (
-              <div className="mentor-tags">
-                {mentor.tags.map((tag, i) => (
-                  <span key={i} className="tag-chip" onClick={() => setSearchTerm(tag.replace('#', ''))}>
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            <div className="mentor-contact-container">
-              {mentor.contact && typeof mentor.contact === 'object' ? (
-                <>
-                  {mentor.contact.email && <a href={`mailto:${mentor.contact.email}`} className="contact-link email">📧 אימייל</a>}
-                  {mentor.contact.calendar && <a href={mentor.contact.calendar} className="contact-link calendar" target="_blank" rel="noreferrer">📅 יומן</a>}
-                  {mentor.contact.phone && <span className="contact-link phone">📞 {mentor.contact.phone}</span>}
-                  {mentor.contact.free_text && <div className="contact-free-text">{mentor.contact.free_text}</div>}
-                </>
-              ) : (
-                mentor["איך ליצור קשר בנוסף ל-DM?"] && (
-                  <a href={mentor["איך ליצור קשר בנוסף ל-DM?"]} className="contact-link generic" target="_blank" rel="noreferrer">
-                    צרו קשר
-                  </a>
-                )
-              )}
-            </div>
-          </div>
+          <MentorCard
+            key={index}
+            mentor={mentor}
+            index={index}
+            setSearchTerm={setSearchTerm}
+          />
         ))}
       </div>
 
-      <div className="chat-bubble-toggle" onClick={() => setChatOpen(!chatOpen)}>
-        {chatOpen ? '✕' : '💬'}
-      </div>
-
-      {chatOpen && (
-        <div className="chat-window">
-          <div className="chat-header">Matchmaker AI</div>
-          <div className="chat-messages">
-            {messages.map((m, i) => (
-              <div key={i} className={`message ${m.role}`}>
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.text}</ReactMarkdown>
-              </div>
-            ))}
-            {loadingChat && <div className="message ai">חושב...</div>}
-          </div>
-          <div className="chat-input-area">
-            <input
-              type="text"
-              placeholder="כתבו הודעה..."
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-            />
-            <button onClick={handleSendMessage}>שלח</button>
-          </div>
-        </div>
-      )}
+      <ChatWindow
+        chatOpen={chatOpen}
+        setChatOpen={setChatOpen}
+        messages={messages}
+        chatInput={chatInput}
+        setChatInput={setChatInput}
+        handleSendMessage={handleSendMessage}
+        loadingChat={loadingChat}
+      />
     </div>
   );
 }
