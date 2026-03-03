@@ -18,6 +18,12 @@ function App() {
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
 
+  const [isMentor, setIsMentor] = useState(false);
+  const [mentorName, setMentorName] = useState('');
+  const [mentorFields, setMentorFields] = useState('');
+  const [mentorBackground, setMentorBackground] = useState('');
+  const [mentorContact, setMentorContact] = useState('');
+
   useEffect(() => {
     fetch('http://localhost:8000/mentors')
       .then(res => res.json())
@@ -50,11 +56,27 @@ function App() {
     e.preventDefault();
     setAuthError('');
     const endpoint = authMode === 'login' ? 'login' : 'signup';
+
+    const payload = {
+      email,
+      password,
+      role: isMentor && authMode === 'signup' ? 'mentor' : 'mentee'
+    };
+
+    if (isMentor && authMode === 'signup') {
+      payload.mentor_data = {
+        name: mentorName,
+        fields: mentorFields,
+        background: mentorBackground,
+        contact: mentorContact
+      };
+    }
+
     try {
       const res = await fetch(`http://localhost:8000/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       if (res.ok) {
@@ -76,10 +98,20 @@ function App() {
 
   const filteredMentors = mentors.filter(mentor => {
     const searchLow = searchTerm.toLowerCase();
+    const name = (mentor["טוויטר / שם"] || mentor.name || "").toLowerCase();
+    const fields = (mentor["באיזה תחומים אתם מציעים מנטורינג?"] || mentor.fields || "").toLowerCase();
+    const background = (mentor["רקע רלוונטי"] || mentor.background || "").toLowerCase();
+    const summary = (mentor.summary || "").toLowerCase();
+    const tags = (mentor.tags || []).join(" ").toLowerCase();
+    const role = (mentor.role || "").toLowerCase();
+
     return (
-      mentor["רקע רלוונטי"]?.toLowerCase().includes(searchLow) ||
-      mentor["באיזה תחומים אתם מציעים מנטורינג?"]?.toLowerCase().includes(searchLow) ||
-      mentor["טוויטר / שם"]?.toLowerCase().includes(searchLow)
+      name.includes(searchLow) ||
+      fields.includes(searchLow) ||
+      background.includes(searchLow) ||
+      summary.includes(searchLow) ||
+      tags.includes(searchLow) ||
+      role.includes(searchLow)
     );
   });
 
@@ -144,15 +176,68 @@ function App() {
             />
           </div>
 
+          {authMode === 'signup' && (
+            <div className="mentor-signup-toggle">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={isMentor}
+                  onChange={e => setIsMentor(e.target.checked)}
+                />
+                אני רוצה להצטרף כמנטור
+              </label>
+            </div>
+          )}
+
+          {authMode === 'signup' && isMentor && (
+            <div className="mentor-extra-fields">
+              <div className="form-group">
+                <input
+                  type="text"
+                  placeholder="שם / טוויטר"
+                  value={mentorName}
+                  onChange={e => setMentorName(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <input
+                  type="text"
+                  placeholder="תחומי מנטורינג (למשל: Frontend, Python)"
+                  value={mentorFields}
+                  onChange={e => setMentorFields(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <textarea
+                  placeholder="רקע רלוונטי"
+                  value={mentorBackground}
+                  onChange={e => setMentorBackground(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <input
+                  type="text"
+                  placeholder="איך ליצור קשר (לינק או פרטים)"
+                  value={mentorContact}
+                  onChange={e => setMentorContact(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+          )}
+
           <button type="submit">
-            {authMode === 'login' ? 'התחברות' : 'יצירת חשבון'}
+            {authMode === 'login' ? 'התחברות' : (isMentor ? 'הרשמה כמנטור' : 'יצירת חשבון')}
           </button>
 
           <div className="toggle-auth">
             {authMode === 'login' ? (
-              <p>אין לכם חשבון? <span onClick={() => setAuthMode('signup')}>הירשמו כאן</span></p>
+              <p>אין לכם חשבון? <span onClick={() => { setAuthMode('signup'); setIsMentor(false); }}>הירשמו כאן</span></p>
             ) : (
-              <p>כבר יש לכם חשבון? <span onClick={() => setAuthMode('login')}>התחברו כאן</span></p>
+              <p>כבר יש לכם חשבון? <span onClick={() => { setAuthMode('login'); setIsMentor(false); }}>התחברו כאן</span></p>
             )}
           </div>
         </form>
@@ -183,14 +268,47 @@ function App() {
       <div className="mentor-grid">
         {filteredMentors.map((mentor, index) => (
           <div className="mentor-card" key={index} style={{ animationDelay: `${index * 0.05}s` }}>
-            <div className="mentor-name">{mentor["טוויטר / שם"] || "אנונימי"}</div>
-            <div className="mentor-fields">{mentor["באיזה תחומים אתם מציעים מנטורינג?"]}</div>
-            <div className="mentor-background">{mentor["רקע רלוונטי"]}</div>
-            {mentor["איך ליצור קשר בנוסף ל-DM?"] && (
-              <a href={mentor["איך ליצור קשר בנוסף ל-DM?"]} className="mentor-contact" target="_blank" rel="noreferrer">
-                צרו קשר
-              </a>
+            <div className="mentor-card-header">
+              <div className="mentor-name">{mentor["טוויטר / שם"] || mentor.name || "אנונימי"}</div>
+              {mentor.role && <div className="mentor-role-badge">{mentor.role}</div>}
+            </div>
+
+            {mentor.summary && <div className="mentor-summary">{mentor.summary}</div>}
+
+            <div className="mentor-fields">
+              <strong>תחומי התמחות:</strong> {mentor["באיזה תחומים אתם מציעים מנטורינג?"] || mentor.fields}
+            </div>
+
+            <div className="mentor-background">
+              <strong>רקע:</strong> {mentor["רקע רלוונטי"] || mentor.background}
+            </div>
+
+            {mentor.tags && mentor.tags.length > 0 && (
+              <div className="mentor-tags">
+                {mentor.tags.map((tag, i) => (
+                  <span key={i} className="tag-chip" onClick={() => setSearchTerm(tag.replace('#', ''))}>
+                    {tag}
+                  </span>
+                ))}
+              </div>
             )}
+
+            <div className="mentor-contact-container">
+              {mentor.contact && typeof mentor.contact === 'object' ? (
+                <>
+                  {mentor.contact.email && <a href={`mailto:${mentor.contact.email}`} className="contact-link email">📧 אימייל</a>}
+                  {mentor.contact.calendar && <a href={mentor.contact.calendar} className="contact-link calendar" target="_blank" rel="noreferrer">📅 יומן</a>}
+                  {mentor.contact.phone && <span className="contact-link phone">📞 {mentor.contact.phone}</span>}
+                  {mentor.contact.free_text && <div className="contact-free-text">{mentor.contact.free_text}</div>}
+                </>
+              ) : (
+                mentor["איך ליצור קשר בנוסף ל-DM?"] && (
+                  <a href={mentor["איך ליצור קשר בנוסף ל-DM?"]} className="contact-link generic" target="_blank" rel="noreferrer">
+                    צרו קשר
+                  </a>
+                )
+              )}
+            </div>
           </div>
         ))}
       </div>
