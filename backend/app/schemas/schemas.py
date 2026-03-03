@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Union
 from datetime import datetime
 
 class ChatMessage(BaseModel):
@@ -19,7 +19,7 @@ class MentorBase(BaseModel):
     name: str = Field(..., alias="טוויטר / שם")
     fields: str = Field(..., alias="באיזה תחומים אתם מציעים מנטורינג?")
     background: str = Field(..., alias="רקע רלוונטי")
-    contact: ContactInfo
+    contact: Optional[Union[ContactInfo, str]] = None
     summary: Optional[str] = None
     tags: List[str] = []
     role: Optional[str] = None

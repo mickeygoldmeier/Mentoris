@@ -1,6 +1,6 @@
 from datetime import datetime, UTC
 from fastapi import APIRouter, HTTPException
-from ...schemas.schemas import UserAuth
+from ...schemas.schemas import UserAuth, ContactInfo
 from ...db.mongodb import get_database
 from ...services.ai_service import ai_service
 
@@ -28,6 +28,15 @@ async def signup(auth: UserAuth):
             fields=auth.mentor_data.fields
         )
 
+        # Handle structured vs string contact
+        contact_data = auth.mentor_data.contact
+        if isinstance(contact_data, ContactInfo):
+            contact_dict = contact_data.dict()
+        elif isinstance(contact_data, str):
+            contact_dict = {"free_text": contact_data, "email": auth.email}
+        else:
+            contact_dict = {"email": auth.email}
+
         mentor_doc = {
             "טוויטר / שם": auth.mentor_data.name,
             "role": enrichment.get("role", "מנטור"),
@@ -35,11 +44,7 @@ async def signup(auth: UserAuth):
             "tags": enrichment.get("tags", []),
             "באיזה תחומים אתם מציעים מנטורינג?": auth.mentor_data.fields,
             "רקע רלוונטי": auth.mentor_data.background,
-            "contact": {
-                "email": auth.email,
-                "calendar": getattr(auth.mentor_data, "calendar", ""),
-                "phone": getattr(auth.mentor_data, "phone", "")
-            },
+            "contact": contact_dict,
             "email": auth.email
         }
         await db["mentors"].insert_one(mentor_doc)
