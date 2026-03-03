@@ -17,8 +17,10 @@ function Auth({
     setMentorFields,
     mentorBackground,
     setMentorBackground,
-    mentorContact,
-    setMentorContact
+    mentorCalendar,
+    setMentorCalendar,
+    mentorPhone,
+    setMentorPhone
 }) {
     return (
         <div className="auth-overlay">
@@ -72,7 +74,7 @@ function Auth({
                         <div className="form-group">
                             <input
                                 type="text"
-                                placeholder="שם / טוויטר"
+                                placeholder="תפקיד / תואר מקצועי (למשל: Senior CTO)"
                                 value={mentorName}
                                 onChange={e => setMentorName(e.target.value)}
                                 required
@@ -89,7 +91,7 @@ function Auth({
                         </div>
                         <div className="form-group">
                             <textarea
-                                placeholder="רקע רלוונטי"
+                                placeholder="ספרו על הניסיון שלכם ואיך תוכלו לעזור"
                                 value={mentorBackground}
                                 onChange={e => setMentorBackground(e.target.value)}
                                 required
@@ -97,11 +99,18 @@ function Auth({
                         </div>
                         <div className="form-group">
                             <input
-                                type="text"
-                                placeholder="איך ליצור קשר (לינק או פרטים)"
-                                value={mentorContact}
-                                onChange={e => setMentorContact(e.target.value)}
-                                required
+                                type="url"
+                                placeholder="לינק ליומן (Calendly וכו') - אופציונלי"
+                                value={mentorCalendar}
+                                onChange={e => setMentorCalendar(e.target.value)}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <input
+                                type="tel"
+                                placeholder="מספר טלפון לתיאום - אופציונלי"
+                                value={mentorPhone}
+                                onChange={e => setMentorPhone(e.target.value)}
                             />
                         </div>
                     </div>

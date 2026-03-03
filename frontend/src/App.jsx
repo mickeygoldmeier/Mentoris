@@ -24,7 +24,8 @@ function App() {
   const [mentorName, setMentorName] = useState('');
   const [mentorFields, setMentorFields] = useState('');
   const [mentorBackground, setMentorBackground] = useState('');
-  const [mentorContact, setMentorContact] = useState('');
+  const [mentorCalendar, setMentorCalendar] = useState('');
+  const [mentorPhone, setMentorPhone] = useState('');
 
   useEffect(() => {
     fetch('http://localhost:8000/mentors')
@@ -66,10 +67,15 @@ function App() {
 
     if (isMentor && authMode === 'signup') {
       payload.mentor_data = {
-        name: mentorName,
+        name: email.split('@')[0], // Use email prefix as default name if not provided
+        role: mentorName, // This field is used for 'Role' in Auth.jsx
         fields: mentorFields,
         background: mentorBackground,
-        contact: mentorContact
+        contact: {
+          email: email,
+          calendar: mentorCalendar,
+          phone: mentorPhone
+        }
       };
     }
 
@@ -161,8 +167,10 @@ function App() {
         setMentorFields={setMentorFields}
         mentorBackground={mentorBackground}
         setMentorBackground={setMentorBackground}
-        mentorContact={mentorContact}
-        setMentorContact={setMentorContact}
+        mentorCalendar={mentorCalendar}
+        setMentorCalendar={setMentorCalendar}
+        mentorPhone={mentorPhone}
+        setMentorPhone={setMentorPhone}
       />
     );
   }
