@@ -114,11 +114,27 @@ class AIService:
         return json.dumps(results, ensure_ascii=False)
 
     def _format_mentor(self, mentor):
+        contact = mentor.get("contact", {})
+        if isinstance(contact, str):
+            # Fallback for old data
+            contact_str = contact
+        else:
+            # New structured format
+            contact_parts = []
+            if contact.get("email"): contact_parts.append(f"Email: {contact['email']}")
+            if contact.get("calendar"): contact_parts.append(f"Calendar: {contact['calendar']}")
+            if contact.get("phone"): contact_parts.append(f"Phone: {contact['phone']}")
+            if contact.get("free_text"): contact_parts.append(contact['free_text'])
+            contact_str = " | ".join(contact_parts) if contact_parts else mentor.get("איך ליצור קשר בנוסף ל-DM?", "")
+
         return {
-            "Name": mentor.get("טוויטר / שם", "Unknown"),
+            "Name": mentor.get("טוויטר / שם", mentor.get("name", "Unknown")),
+            "Role": mentor.get("role", ""),
+            "Summary": mentor.get("summary", ""),
+            "Tags": ", ".join(mentor.get("tags", [])),
             "Fields": mentor.get("באיזה תחומים אתם מציעים מנטורינג?", ""),
             "Background": mentor.get("רקע רלוונטי", ""),
-            "Contact": mentor.get("איך ליצור קשר בנוסף ל-DM?", "")
+            "ContactInfo": contact_str
         }
 
     def create_chat(self, history=None):
@@ -135,14 +151,20 @@ class AIService:
             system_instruction=(
                 "You are Mentoris AI, a premium assistant for matching users with mentors. "
                 "Your goal is to provide beautiful, structured information in Hebrew.\n\n"
+                "Mentor Profiles now include:\n"
+                "- **Role**: Their primary professional title.\n"
+                "- **Summary**: A concise elevator pitch.\n"
+                "- **Tags**: Specialized topics like #React, #Management.\n"
+                "- **ContactInfo**: Structured ways to reach them.\n\n"
                 "Formatting Guidelines:\n"
                 "1. Use **bold text** for mentor names and key facts.\n"
-                "2. Use Markdown **tables** when comparing multiple mentors side-by-side.\n"
-                "3. Use **bullet points** or numbered lists for summaries and intro drafts.\n"
-                "4. Use 'semantic_search_mentors' for goal-based queries.\n"
-                "5. Use 'search_mentors' for specific names.\n"
-                "6. Use 'draft_intro_message' for message drafts.\n"
-                "7. Use 'summarize_mentor' or 'compare_mentors' for deep analysis.\n\n"
+                "2. Mention the mentor's **Role** and **Summary** when introducing them.\n"
+                "3. Use Markdown **tables** when comparing multiple mentors side-by-side.\n"
+                "4. Use **bullet points** or numbered lists for summaries and intro drafts.\n"
+                "5. Use 'semantic_search_mentors' for goal-based queries.\n"
+                "6. Use 'search_mentors' for specific names.\n"
+                "7. Use 'draft_intro_message' for message drafts.\n"
+                "8. Use 'summarize_mentor' or 'compare_mentors' for deep analysis.\n\n"
                 "Always respond in Hebrew. Be professional, encouraging, and clear."
             )
         )
