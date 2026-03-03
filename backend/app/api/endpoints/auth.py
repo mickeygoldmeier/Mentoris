@@ -2,6 +2,7 @@ from datetime import datetime, UTC
 from fastapi import APIRouter, HTTPException
 from ...schemas.schemas import UserAuth
 from ...db.mongodb import get_database
+from ...services.ai_service import ai_service
 
 router = APIRouter()
 
@@ -21,11 +22,24 @@ async def signup(auth: UserAuth):
     await db["users"].insert_one(user_doc)
 
     if auth.role == "mentor" and auth.mentor_data:
+        # AI Enrichment on signup
+        enrichment = ai_service.enrich_mentor_on_signup(
+            background=auth.mentor_data.background,
+            fields=auth.mentor_data.fields
+        )
+
         mentor_doc = {
             "טוויטר / שם": auth.mentor_data.name,
+            "role": enrichment.get("role", "מנטור"),
+            "summary": enrichment.get("summary", ""),
+            "tags": enrichment.get("tags", []),
             "באיזה תחומים אתם מציעים מנטורינג?": auth.mentor_data.fields,
             "רקע רלוונטי": auth.mentor_data.background,
-            "איך ליצור קשר בנוסף ל-DM?": auth.mentor_data.contact,
+            "contact": {
+                "email": auth.email,
+                "calendar": getattr(auth.mentor_data, "calendar", ""),
+                "phone": getattr(auth.mentor_data, "phone", "")
+            },
             "email": auth.email
         }
         await db["mentors"].insert_one(mentor_doc)

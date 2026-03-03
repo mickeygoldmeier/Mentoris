@@ -174,4 +174,49 @@ class AIService:
             history=history
         )
 
+    def enrich_mentor_on_signup(self, background: str, fields: str) -> dict:
+        """
+        Generates an AI summary and tags for a new mentor during signup.
+        """
+        prompt = f"""
+        אתה עוזר חכם של פלטפורמת Mentoris.
+        קיבלנו מנטור חדש עם הרקע הבא:
+        רקע: {background}
+        תחומי עניין/מנטורינג: {fields}
+
+        משימתך היא לייצר:
+        1. תקציר (summary): משפט אחד קצר וקולע (Elevator Pitch) בעברית שמסביר מי המנטור ומה הערך שלו.
+        2. תגיות (tags): רשימה של 3-5 תגיות רלוונטיות (למשל: #React, #ניהול, #Backend).
+        3. תפקיד (role): כותרת מקצועית קצרה (למשל: Senior Fullstack Developer).
+
+        החזר את התשובה בפורמט JSON בלבד:
+        {{
+            "summary": "...",
+            "tags": ["#...", "#..."],
+            "role": "..."
+        }}
+        """
+        try:
+            response = self.client.models.generate_content(
+                model="gemini-2.0-flash",
+                contents=prompt
+            )
+            # Basic JSON extraction
+            text = response.text.strip()
+            if "```json" in text:
+                text = text.split("```json")[1].split("```")[0].strip()
+            elif "```" in text:
+                text = text.split("```")[1].split("```")[0].strip()
+            
+            import json
+            data = json.loads(text)
+            return data
+        except Exception as e:
+            print(f"Error enriching mentor on signup: {e}")
+            return {
+                "summary": "מנטור חדש בקהילה",
+                "tags": [f"#{t.strip()}" for t in fields.split(",")[:3]],
+                "role": "מנטור"
+            }
+
 ai_service = AIService()
