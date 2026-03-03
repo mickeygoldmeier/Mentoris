@@ -15,10 +15,22 @@ async def signup(auth: UserAuth):
     user_doc = {
         "email": auth.email,
         "password": auth.password,
+        "role": auth.role,
         "created_at": datetime.now(UTC)
     }
     await db["users"].insert_one(user_doc)
-    return {"message": "User created successfully", "user_id": auth.email}
+
+    if auth.role == "mentor" and auth.mentor_data:
+        mentor_doc = {
+            "טוויטר / שם": auth.mentor_data.name,
+            "באיזה תחומים אתם מציעים מנטורינג?": auth.mentor_data.fields,
+            "רקע רלוונטי": auth.mentor_data.background,
+            "איך ליצור קשר בנוסף ל-DM?": auth.mentor_data.contact,
+            "email": auth.email
+        }
+        await db["mentors"].insert_one(mentor_doc)
+
+    return {"message": "User created successfully", "user_id": auth.email, "role": auth.role}
 
 @router.post("/login")
 async def login(auth: UserAuth):
@@ -27,4 +39,4 @@ async def login(auth: UserAuth):
     if not user:
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
-    return {"message": "Login successful", "user_id": auth.email}
+    return {"message": "Login successful", "user_id": auth.email, "role": user.get("role", "mentee")}

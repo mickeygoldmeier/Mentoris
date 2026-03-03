@@ -1,17 +1,20 @@
 import os
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Mentoris"
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api/v1"
     
-    MONGO_URL: str = os.getenv("MONGO_URL", "mongodb://localhost:27017")
+    MONGO_URL: str = "mongodb://localhost:27017"
     DATABASE_NAME: str = "mentoris_db"
-    
-    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+    GEMINI_API_KEY: str = ""
 
-    class Config:
-        case_sensitive = True
+    model_config = SettingsConfigDict(
+        env_file=os.path.join(os.path.dirname(__file__), "../../.env"),
+        env_file_encoding='utf-8',
+        case_sensitive=True,
+        extra='ignore'
+    )
 
 settings = Settings()
