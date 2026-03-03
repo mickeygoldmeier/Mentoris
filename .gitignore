@@ -46,3 +46,4 @@ backend/data/mentors.json
 csvjson.json
 python/
 backend/scripts/old_*
+.agents/
