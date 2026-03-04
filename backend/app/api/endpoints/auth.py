@@ -19,12 +19,8 @@ async def signup(auth: UserAuth) -> dict:
         Success message with user_id and role.
     """
     db = get_database()
-    existing_user = await db["users"].find_one({"email": auth.email})
-    if existing_user:
-        raise HTTPException(status_code=400, detail="User already exists")
-    
     user_doc = {
-        "email": auth.email,
+        "email": auth.email.lower(),
         "password": get_password_hash(auth.password),
         "role": auth.role,
         "created_at": datetime.now(UTC)
@@ -43,12 +39,12 @@ async def signup(auth: UserAuth) -> dict:
         if isinstance(contact_data, ContactInfo):
             contact_dict = contact_data.dict()
         elif isinstance(contact_data, str):
-            contact_dict = {"free_text": contact_data, "email": auth.email}
+            contact_dict = {"free_text": contact_data, "email": auth.email.lower()}
         else:
-            contact_dict = {"email": auth.email}
+            contact_dict = {"email": auth.email.lower()}
 
         mentor_doc = {
-            "user_id": auth.email,
+            "user_id": auth.email.lower(),
             "טוויטר / שם": auth.mentor_data.name,
             "role": enrichment.get("role", "מנטור"),
             "summary": enrichment.get("summary", ""),
@@ -56,12 +52,19 @@ async def signup(auth: UserAuth) -> dict:
             "באיזה תחומים אתם מציעים מנטורינג?": auth.mentor_data.fields,
             "רקע רלוונטי": auth.mentor_data.background,
             "contact": contact_dict,
-            "email": auth.email
+            "email": auth.email.lower()
         }
 
         await db["mentors"].insert_one(mentor_doc)
 
-    return {"message": "User created successfully", "user_id": auth.email, "role": auth.role}
+    access_token = create_access_token(subject=auth.email.lower())
+    return {
+        "message": "User created successfully", 
+        "user_id": auth.email.lower(), 
+        "role": auth.role,
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
 
 @router.post("/login")
 async def login(auth: UserAuth) -> dict:
@@ -75,15 +78,15 @@ async def login(auth: UserAuth) -> dict:
         Access token and user metadata.
     """
     db = get_database()
-    user = await db["users"].find_one({"email": auth.email})
+    user = await db["users"].find_one({"email": auth.email.lower()})
     if not user or not verify_password(auth.password, user["password"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
-    access_token = create_access_token(subject=auth.email)
+    access_token = create_access_token(subject=auth.email.lower())
     
     return {
         "access_token": access_token,
         "token_type": "bearer",
-        "user_id": auth.email,
+        "user_id": auth.email.lower(),
         "role": user.get("role", "mentee")
     }
