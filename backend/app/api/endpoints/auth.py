@@ -38,6 +38,7 @@ async def signup(auth: UserAuth):
             contact_dict = {"email": auth.email}
 
         mentor_doc = {
+            "user_id": auth.email,
             "טוויטר / שם": auth.mentor_data.name,
             "role": enrichment.get("role", "מנטור"),
             "summary": enrichment.get("summary", ""),
@@ -47,6 +48,7 @@ async def signup(auth: UserAuth):
             "contact": contact_dict,
             "email": auth.email
         }
+
         await db["mentors"].insert_one(mentor_doc)
 
     return {"message": "User created successfully", "user_id": auth.email, "role": auth.role}

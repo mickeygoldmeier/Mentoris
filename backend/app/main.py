@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .core.config import settings
 from .db.mongodb import connect_to_mongo, close_mongo_connection
-from .api.endpoints import auth, mentors, chat
+from .api.endpoints import auth, mentors, chat, messaging, bookings
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -32,6 +32,9 @@ async def shutdown_event():
 app.include_router(auth.router, tags=["auth"])
 app.include_router(mentors.router, prefix="/mentors", tags=["mentors"])
 app.include_router(chat.router, prefix="/chat", tags=["chat"])
+app.include_router(messaging.router, prefix="/messaging", tags=["messaging"])
+app.include_router(bookings.router, prefix="/bookings", tags=["bookings"])
+
 
 if __name__ == "__main__":
     import uvicorn
