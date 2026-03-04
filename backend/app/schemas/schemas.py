@@ -37,6 +37,7 @@ class Conversation(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
     participants: List[str]  # user_ids
     last_message: Optional[Message] = None
+    unread_by: List[str] = [] # List of user emails who haven't read the latest message
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 class BookingRequest(BaseModel):

@@ -72,6 +72,7 @@ async def send_message(recipient_id: str, sender_id: str, content: str, current_
         new_conv = {
             "participants": participants,
             "last_message": message_dict,
+            "unread_by": [recipient_id], # Recipient hasn't read this new conversation
             "updated_at": datetime.utcnow()
         }
         res = await db["conversations"].insert_one(new_conv)
@@ -84,6 +85,7 @@ async def send_message(recipient_id: str, sender_id: str, content: str, current_
             {
                 "$set": {
                     "last_message": message_dict,
+                    "unread_by": [recipient_id], # Set recipient as unread
                     "updated_at": datetime.utcnow()
                 }
             }
@@ -127,6 +129,18 @@ async def websocket_messaging(websocket: WebSocket, user_id: str):
         manager.disconnect(user_id.lower(), websocket)
     except Exception:
         manager.disconnect(user_id.lower(), websocket)
+
+@router.post("/read/{conversation_id}")
+async def mark_as_read(conversation_id: str, current_user: dict = Depends(get_current_user)):
+    """
+    Mark a conversation as read for the current user.
+    """
+    db = get_database()
+    await db["conversations"].update_one(
+        {"_id": ObjectId(conversation_id)},
+        {"$pull": {"unread_by": current_user["email"].lower()}}
+    )
+    return {"status": "success"}
 
 @router.get("/history/{conversation_id}", response_model=List[Message])
 async def get_message_history(conversation_id: str, current_user: dict = Depends(get_current_user)) -> List[dict]:
