@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 const API_BASE_URL = 'http://localhost:8000/api/v1';
 
@@ -8,6 +8,15 @@ const DirectMessages = ({ currentUser, isOpen, onClose, initialRecipientId }) =>
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
     const [loading, setLoading] = useState(false);
+    const messagesEndRef = useRef(null);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
 
     useEffect(() => {
         let socket;
@@ -20,13 +29,14 @@ const DirectMessages = ({ currentUser, isOpen, onClose, initialRecipientId }) =>
             socket.onmessage = (event) => {
                 const data = JSON.parse(event.data);
                 if (data.type === 'new_message') {
-                    // Update conversation list to show new last message
-                    fetchConversations();
-
-                    // If this message belongs to the current conversation, update messages
+                    // If this message belongs to the current conversation, update messages and mark as read
                     if (activeConversation && activeConversation._id === data.conversation_id) {
                         setMessages(prev => [...prev, data.message]);
+                        markAsRead(data.conversation_id);
                     }
+
+                    // Update conversation list to show new last message
+                    fetchConversations();
                 }
             };
 
@@ -106,11 +116,29 @@ const DirectMessages = ({ currentUser, isOpen, onClose, initialRecipientId }) =>
             const data = await res.json();
             if (Array.isArray(data)) {
                 setMessages(data);
+                // Also mark as read when fetching messages
+                markAsRead(convId);
             } else {
                 setMessages([]);
             }
         } catch (err) {
             console.error("Error fetching messages:", err);
+        }
+    };
+
+    const markAsRead = async (convId) => {
+        if (!convId || convId === 'new' || !currentUser?.access_token) return;
+        try {
+            await fetch(`${API_BASE_URL}/messaging/read/${convId}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${currentUser.access_token}` }
+            });
+            // Update local state quietly
+            setConversations(prev => prev.map(c =>
+                c._id === convId ? { ...c, unread_by: (c.unread_by || []).filter(email => email !== currentUser.user_id) } : c
+            ));
+        } catch (err) {
+            console.error("Error marking as read:", err);
         }
     };
 
@@ -159,18 +187,24 @@ const DirectMessages = ({ currentUser, isOpen, onClose, initialRecipientId }) =>
                         {conversations.length === 0 && !activeConversation?.isNew && (
                             <div className="dm-empty-sidebar">אין שיחות פעילות</div>
                         )}
-                        {conversations.map(conv => (
-                            <div
-                                key={conv._id}
-                                className={`conversation-item ${activeConversation?._id === conv._id ? 'active' : ''}`}
-                                onClick={() => setActiveConversation(conv)}
-                            >
-                                <div className="conv-user">
-                                    {conv.participants.find(p => p.toLowerCase() !== currentUser.user_id.toLowerCase())}
+                        {conversations.map(conv => {
+                            const isUnread = conv.unread_by?.includes(currentUser.user_id);
+                            return (
+                                <div
+                                    key={conv._id}
+                                    className={`conversation-item ${activeConversation?._id === conv._id ? 'active' : ''} ${isUnread ? 'unread' : ''}`}
+                                    onClick={() => setActiveConversation(conv)}
+                                >
+                                    <div className="conv-content">
+                                        <div className="conv-user">
+                                            {conv.participants.find(p => p.toLowerCase() !== currentUser.user_id.toLowerCase())}
+                                        </div>
+                                        <div className="conv-last-msg">{conv.last_message?.content}</div>
+                                    </div>
+                                    {isUnread && <div className="unread-dot"></div>}
                                 </div>
-                                <div className="conv-last-msg">{conv.last_message?.content}</div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
 
@@ -190,6 +224,7 @@ const DirectMessages = ({ currentUser, isOpen, onClose, initialRecipientId }) =>
                                         <div className="msg-time">{msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'כרגע'}</div>
                                     </div>
                                 ))}
+                                <div ref={messagesEndRef} />
                             </div>
                             <form className="dm-input" onSubmit={handleSendMessage}>
                                 <input
@@ -204,7 +239,11 @@ const DirectMessages = ({ currentUser, isOpen, onClose, initialRecipientId }) =>
                         </>
                     ) : (
                         <div className="dm-empty">
-                            <p>בחר שיחה כדי להתחיל</p>
+                            <div className="empty-state-card">
+                                <div className="empty-icon">✉️</div>
+                                <h3>ההודעות שלך</h3>
+                                <p>בחר שיחה מהרשימה או שלח הודעה למנטור חדש כדי להתחיל.</p>
+                            </div>
                         </div>
                     )}
                 </div>

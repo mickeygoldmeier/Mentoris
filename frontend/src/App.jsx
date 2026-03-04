@@ -34,6 +34,8 @@ function App() {
   const [mentorCalendar, setMentorCalendar] = useState('');
   const [mentorPhone, setMentorPhone] = useState('');
 
+  const [unreadCount, setUnreadCount] = useState(0);
+
   useEffect(() => {
     fetch(`${API_BASE_URL}/mentors/`)
       .then(res => res.json())
@@ -43,6 +45,30 @@ function App() {
     if (currentUser?.access_token && currentUser.access_token !== 'undefined') {
       loadHistory(currentUser.user_id);
     }
+  }, [currentUser]);
+
+  // Poll for unread count if logged in
+  useEffect(() => {
+    let interval;
+    if (currentUser?.user_id && currentUser?.access_token) {
+      const fetchUnread = async () => {
+        try {
+          const res = await fetch(`${API_BASE_URL}/messaging/conversations/${encodeURIComponent(currentUser.user_id)}`, {
+            headers: { 'Authorization': `Bearer ${currentUser.access_token}` }
+          });
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            const count = data.filter(c => c.unread_by?.includes(currentUser.user_id)).length;
+            setUnreadCount(count);
+          }
+        } catch (err) {
+          console.error("Error fetching unread count:", err);
+        }
+      };
+      fetchUnread();
+      interval = setInterval(fetchUnread, 10000); // Check every 10s
+    }
+    return () => clearInterval(interval);
   }, [currentUser]);
 
   const loadHistory = async (userId) => {
@@ -212,6 +238,7 @@ function App() {
         handleLogout={handleLogout}
         onOpenDMs={() => setDmOpen(true)}
         onOpenDashboard={() => setDashboardOpen(true)}
+        unreadCount={unreadCount}
       />
 
       <div className="mentor-grid">

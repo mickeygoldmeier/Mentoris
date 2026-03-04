@@ -1,12 +1,15 @@
 import React from 'react';
 
-function Header({ searchTerm, setSearchTerm, currentUser, handleLogout, onOpenDMs, onOpenDashboard }) {
+function Header({ searchTerm, setSearchTerm, currentUser, handleLogout, onOpenDMs, onOpenDashboard, unreadCount }) {
     return (
         <>
             <div className="user-profile">
                 <span className="user-email">{currentUser?.user_id}</span>
                 <div className="nav-buttons">
-                    <button className="nav-btn" onClick={onOpenDMs}>💬 הודעות</button>
+                    <button className="nav-btn dm-trigger" onClick={onOpenDMs}>
+                        💬 הודעות
+                        {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
+                    </button>
                     {currentUser?.role === 'mentor' && (
                         <button className="nav-btn" onClick={onOpenDashboard}>🚀 דאשבורד</button>
                     )}
