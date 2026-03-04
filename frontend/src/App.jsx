@@ -182,6 +182,8 @@ function App() {
         setSearchTerm={setSearchTerm}
         currentUser={currentUser}
         handleLogout={handleLogout}
+        onOpenDMs={() => setDmOpen(true)}
+        onOpenDashboard={() => setDashboardOpen(true)}
       />
 
       <div className="mentor-grid">
@@ -191,6 +193,8 @@ function App() {
             mentor={mentor}
             index={index}
             setSearchTerm={setSearchTerm}
+            currentUser={currentUser}
+            onOpenDMs={() => setDmOpen(true)}
           />
         ))}
       </div>
@@ -203,6 +207,18 @@ function App() {
         setChatInput={setChatInput}
         handleSendMessage={handleSendMessage}
         loadingChat={loadingChat}
+      />
+
+      <DirectMessages
+        currentUser={currentUser}
+        isOpen={dmOpen}
+        onClose={() => setDmOpen(false)}
+      />
+
+      <MentorDashboard
+        currentUser={currentUser}
+        isOpen={dashboardOpen}
+        onClose={() => setDashboardOpen(false)}
       />
     </div>
   );

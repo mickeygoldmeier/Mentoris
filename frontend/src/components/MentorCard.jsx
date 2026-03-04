@@ -1,6 +1,7 @@
 import React from 'react';
 
-function MentorCard({ mentor, index, setSearchTerm }) {
+function MentorCard({ mentor, index, setSearchTerm, onOpenDMs }) {
+
     return (
         <div className="mentor-card" style={{ animationDelay: `${index * 0.05}s` }}>
             <div className="mentor-card-header">
@@ -29,21 +30,31 @@ function MentorCard({ mentor, index, setSearchTerm }) {
             )}
 
             <div className="mentor-contact-container">
-                {mentor.contact && typeof mentor.contact === 'object' ? (
+                <button
+                    className="contact-link message"
+                    onClick={() => onOpenDMs(mentor.user_id || mentor.email)}
+                >
+                    💬 הודעה ישירה
+                </button>
+
+                {mentor.contact?.calendar ? (
+                    <a href={mentor.contact.calendar} className="contact-link calendar" target="_blank" rel="noreferrer">
+                        📅 קביעת סשן (חיצוני)
+                    </a>
+                ) : (
+                    <button className="contact-link calendar" onClick={() => alert("Native booking coming soon!")}>
+                        📅 בקשת סשן
+                    </button>
+                )}
+
+                {mentor.contact && typeof mentor.contact === 'object' && (
                     <>
                         {mentor.contact.email && <a href={`mailto:${mentor.contact.email}`} className="contact-link email">📧 אימייל</a>}
-                        {mentor.contact.calendar && <a href={mentor.contact.calendar} className="contact-link calendar" target="_blank" rel="noreferrer">📅 יומן</a>}
                         {mentor.contact.phone && <span className="contact-link phone">📞 {mentor.contact.phone}</span>}
-                        {mentor.contact.free_text && <div className="contact-free-text">{mentor.contact.free_text}</div>}
                     </>
-                ) : (
-                    mentor["איך ליצור קשר בנוסף ל-DM?"] && (
-                        <a href={mentor["איך ליצור קשר בנוסף ל-DM?"]} className="contact-link generic" target="_blank" rel="noreferrer">
-                            צרו קשר
-                        </a>
-                    )
                 )}
             </div>
+
         </div>
     );
 }

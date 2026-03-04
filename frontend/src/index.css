@@ -573,15 +573,40 @@ input:focus {
   left: 2rem;
   display: flex;
   align-items: center;
-  gap: 1.2rem;
+  gap: 1.5rem;
   background: rgba(255, 255, 255, 0.03);
-  padding: 0.6rem 1.2rem;
+  padding: 0.6rem 1.5rem;
   border-radius: 50px;
   border: 1px solid var(--glass-border);
   backdrop-filter: blur(10px);
   z-index: 100;
   animation: fadeIn 0.8s ease-out;
 }
+
+.nav-buttons {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+}
+
+.nav-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  color: var(--text-color);
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.nav-btn:hover {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+  transform: translateY(-2px);
+}
+
 
 .user-email {
   font-size: 0.9rem;
@@ -608,12 +633,344 @@ input:focus {
   transform: scale(1.05);
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
+/* Direct Messaging Styles */
+.dm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadeIn 0.3s ease-out;
+}
 
-  to {
-    opacity: 1;
-  }
+.dm-container {
+  width: 90%;
+  max-width: 900px;
+  height: 80vh;
+  display: flex;
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+}
+
+.dm-sidebar {
+  width: 300px;
+  background: rgba(20, 27, 43, 0.8);
+  border-left: 1px solid var(--glass-border);
+  display: flex;
+  flex-direction: column;
+}
+
+.dm-sidebar-header {
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.dm-sidebar-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.close-btn:hover {
+  color: white;
+}
+
+.conversation-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.conversation-item {
+  padding: 1rem 1.5rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.conversation-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.conversation-item.active {
+  background: rgba(74, 144, 226, 0.1);
+  border-right: 3px solid var(--accent-color);
+}
+
+.conv-user {
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+}
+
+.conv-last-msg {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dm-main {
+  flex: 1;
+  background: rgba(10, 14, 23, 0.9);
+  display: flex;
+  flex-direction: column;
+}
+
+.dm-header {
+  padding: 1rem 1.5rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.dm-messages {
+  flex: 1;
+  padding: 1.5rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.dm-message {
+  max-width: 70%;
+  padding: 0.8rem 1rem;
+  border-radius: 12px;
+  position: relative;
+}
+
+.dm-message.sent {
+  align-self: flex-start;
+  background: var(--accent-color);
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.dm-message.received {
+  align-self: flex-end;
+  background: var(--card-bg);
+  border: 1px solid var(--glass-border);
+  border-bottom-left-radius: 4px;
+}
+
+.msg-time {
+  font-size: 0.7rem;
+  opacity: 0.7;
+  margin-top: 0.3rem;
+  text-align: left;
+}
+
+.dm-input {
+  padding: 1.5rem;
+  border-top: 1px solid var(--glass-border);
+  display: flex;
+  gap: 1rem;
+}
+
+.dm-input input {
+  flex: 1;
+}
+
+.dm-input button {
+  background: var(--accent-color);
+  border: none;
+  border-radius: 12px;
+  padding: 0 1.5rem;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Mentor Dashboard Styles */
+.dashboard-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadeIn 0.4s ease-out;
+}
+
+.dashboard-container {
+  width: 90%;
+  max-width: 800px;
+  max-height: 85vh;
+  background: rgba(20, 27, 43, 0.95);
+  border-radius: 32px;
+  border: 1px solid var(--glass-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8);
+}
+
+.dashboard-header {
+  padding: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.dashboard-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  padding: 2rem;
+}
+
+.stat-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.3s;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.stat-value {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--accent-color);
+}
+
+.stat-card.urgent .stat-value {
+  color: #f87171;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.dashboard-content {
+  flex: 1;
+  padding: 0 2rem 2rem;
+  overflow-y: auto;
+}
+
+.booking-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.booking-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 1.2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.booking-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.mentee-id {
+  font-weight: 700;
+  color: var(--accent-color);
+}
+
+.booking-topic {
+  font-size: 1.1rem;
+}
+
+.booking-time {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.booking-actions {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+}
+
+.accept-btn,
+.reject-btn {
+  padding: 0.5rem 1.2rem;
+  border-radius: 10px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.accept-btn {
+  background: #10b981;
+  color: white;
+}
+
+.reject-btn {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.accept-btn:hover {
+  background: #059669;
+  transform: scale(1.05);
+}
+
+.reject-btn:hover {
+  background: #ef4444;
+  color: white;
+}
+
+.status-badge {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  padding: 0.3rem 0.8rem;
+  border-radius: 50px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.booking-item.accepted .status-badge {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.booking-item.rejected .status-badge {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
 }
