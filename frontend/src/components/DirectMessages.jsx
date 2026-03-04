@@ -10,26 +10,45 @@ const DirectMessages = ({ currentUser, isOpen, onClose, initialRecipientId }) =>
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        let interval;
-        if (isOpen && currentUser?.access_token && String(currentUser.access_token) !== 'undefined') {
+        let socket;
+        if (isOpen && currentUser?.user_id && currentUser?.access_token && String(currentUser.access_token) !== 'undefined') {
             fetchConversations();
-            interval = setInterval(fetchConversations, 5000); // Polling every 5 seconds
+
+            const wsUrl = `ws://localhost:8000/api/v1/messaging/ws/${encodeURIComponent(currentUser.user_id)}`;
+            socket = new WebSocket(wsUrl);
+
+            socket.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === 'new_message') {
+                    // Update conversation list to show new last message
+                    fetchConversations();
+
+                    // If this message belongs to the current conversation, update messages
+                    if (activeConversation && activeConversation._id === data.conversation_id) {
+                        setMessages(prev => [...prev, data.message]);
+                    }
+                }
+            };
+
+            socket.onclose = () => {
+                console.log("WebSocket closed");
+            };
+
+            socket.onerror = (err) => {
+                console.error("WebSocket error:", err);
+            };
         }
+
         return () => {
-            if (interval) clearInterval(interval);
+            if (socket) socket.close();
         };
-    }, [isOpen, currentUser?.access_token]);
+    }, [isOpen, currentUser?.user_id, currentUser?.access_token, activeConversation?._id]);
 
     useEffect(() => {
-        let interval;
         if (activeConversation && activeConversation._id !== 'new') {
             fetchMessages(activeConversation._id);
-            interval = setInterval(() => fetchMessages(activeConversation._id), 3000); // Poll messages every 3 seconds
         }
-        return () => {
-            if (interval) clearInterval(interval);
-        };
-    }, [activeConversation]);
+    }, [activeConversation?._id]);
 
     // Handle opening DM with a specific person from a mentor card
     useEffect(() => {
@@ -110,14 +129,14 @@ const DirectMessages = ({ currentUser, isOpen, onClose, initialRecipientId }) =>
             const data = await res.json();
 
             if (activeConversation.isNew) {
-                // Refresh conversations to get the real ID and switch to it
+                // For new conversations, we still refresh to get the real ID
                 await fetchConversations();
                 setNewMessage('');
-                // The useEffect will catch the new conversation and set it as active
             } else {
-                setMessages([...messages, data]);
                 setNewMessage('');
-                fetchConversations(); // Refresh last message in sidebar
+                // We no longer manually setMessages(prev => [...prev, data]);
+                // The WebSocket notification 'new_message' will handle it for consistency.
+                fetchConversations(); // Still refresh sidebar last message
             }
         } catch (err) {
             console.error("Error sending message:", err);
