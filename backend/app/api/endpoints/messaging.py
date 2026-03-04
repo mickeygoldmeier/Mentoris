@@ -5,6 +5,9 @@ from ...db.mongodb import get_database
 from ...schemas.schemas import Conversation, Message
 from ..deps import get_current_user
 from bson import ObjectId
+from fastapi import WebSocket, WebSocketDisconnect
+from .connection_manager import manager
+import json
 
 router = APIRouter()
 
@@ -87,14 +90,43 @@ async def send_message(recipient_id: str, sender_id: str, content: str, current_
         )
     
     # Store the actual message in a separate collection for history
-    await db["messages"].insert_one({
+    msg_doc = {
         "conversation_id": conv_id,
         "sender_id": sender_id,
         "content": content,
         "timestamp": datetime.utcnow()
-    })
+    }
+    await db["messages"].insert_one(msg_doc)
+    
+    # Broadcast to participants
+    ws_notification = {
+        "type": "new_message",
+        "conversation_id": conv_id,
+        "message": {
+            "sender_id": sender_id,
+            "content": content,
+            "timestamp": msg_doc["timestamp"].isoformat()
+        }
+    }
+    await manager.broadcast_to_participants(ws_notification, participants)
     
     return message
+
+@router.websocket("/ws/{user_id}")
+async def websocket_messaging(websocket: WebSocket, user_id: str):
+    """
+    WebSocket endpoint for real-time messaging updates.
+    """
+    await manager.connect(user_id.lower(), websocket)
+    try:
+        while True:
+            # We mostly use this for server-to-client push, 
+            # but we need to keep the connection alive.
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(user_id.lower(), websocket)
+    except Exception:
+        manager.disconnect(user_id.lower(), websocket)
 
 @router.get("/history/{conversation_id}", response_model=List[Message])
 async def get_message_history(conversation_id: str, current_user: dict = Depends(get_current_user)) -> List[dict]:
