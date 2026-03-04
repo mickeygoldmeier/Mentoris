@@ -14,7 +14,9 @@ const MentorDashboard = ({ currentUser, isOpen, onClose }) => {
     const fetchBookings = async () => {
         try {
             setLoading(true);
-            const res = await fetch(`http://localhost:8000/bookings/mentor/${currentUser.user_id}`);
+            const res = await fetch(`http://localhost:8000/bookings/mentor/${currentUser.user_id}`, {
+                headers: { 'Authorization': `Bearer ${currentUser.access_token}` }
+            });
             const data = await res.json();
             setBookings(data);
 
@@ -30,7 +32,8 @@ const MentorDashboard = ({ currentUser, isOpen, onClose }) => {
     const handleStatusUpdate = async (bookingId, newStatus) => {
         try {
             const res = await fetch(`http://localhost:8000/bookings/status/${bookingId}?status=${newStatus}`, {
-                method: 'PATCH'
+                method: 'PATCH',
+                headers: { 'Authorization': `Bearer ${currentUser.access_token}` }
             });
             if (res.ok) {
                 fetchBookings();
