@@ -40,7 +40,11 @@ function App() {
 
   const loadHistory = async (userId) => {
     try {
-      const res = await fetch(`http://localhost:8000/history/${userId}`);
+      const res = await fetch(`http://localhost:8000/history/${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${currentUser.access_token}`
+        }
+      });
       const data = await res.json();
       if (data.length > 0) {
         const formatted = data.flatMap(chat => [
@@ -87,8 +91,15 @@ function App() {
       });
       const data = await res.json();
       if (res.ok) {
-        localStorage.setItem('mentoris_user', JSON.stringify(data));
-        setCurrentUser(data);
+        // Only store essential info + token
+        const userData = {
+          access_token: data.access_token,
+          user_id: data.user_id,
+          role: data.role
+        };
+        localStorage.setItem('mentoris_user', JSON.stringify(userData));
+        setCurrentUser(userData);
+        setPassword(''); // Clear password from state
       } else {
         setAuthError(data.detail || 'שגיאה בתהליך ההתחברות');
       }
@@ -133,7 +144,10 @@ function App() {
     try {
       const response = await fetch('http://localhost:8000/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${currentUser.access_token}`
+        },
         body: JSON.stringify({
           message: chatInput,
           user_id: currentUser.user_id

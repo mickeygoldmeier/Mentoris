@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     MONGO_URL: str = "mongodb://localhost:27017"
     DATABASE_NAME: str = "mentoris_db"
     GEMINI_API_KEY: str = ""
+    SECRET_KEY: str = "supersecretkey_replace_this_in_production"
 
     model_config = SettingsConfigDict(
         env_file=os.path.join(os.path.dirname(__file__), "../../.env"),

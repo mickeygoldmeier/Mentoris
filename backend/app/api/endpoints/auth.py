@@ -3,11 +3,21 @@ from fastapi import APIRouter, HTTPException
 from ...schemas.schemas import UserAuth, ContactInfo
 from ...db.mongodb import get_database
 from ...services.ai_service import ai_service
+from ...core.security import get_password_hash, verify_password, create_access_token
 
 router = APIRouter()
 
 @router.post("/signup")
-async def signup(auth: UserAuth):
+async def signup(auth: UserAuth) -> dict:
+    """
+    Create a new user account and optional mentor profile.
+    
+    Args:
+        auth: User authentication and profile data.
+        
+    Returns:
+        Success message with user_id and role.
+    """
     db = get_database()
     existing_user = await db["users"].find_one({"email": auth.email})
     if existing_user:
@@ -15,7 +25,7 @@ async def signup(auth: UserAuth):
     
     user_doc = {
         "email": auth.email,
-        "password": auth.password,
+        "password": get_password_hash(auth.password),
         "role": auth.role,
         "created_at": datetime.now(UTC)
     }
@@ -54,10 +64,26 @@ async def signup(auth: UserAuth):
     return {"message": "User created successfully", "user_id": auth.email, "role": auth.role}
 
 @router.post("/login")
-async def login(auth: UserAuth):
+async def login(auth: UserAuth) -> dict:
+    """
+    Authenticate a user and return a JWT access token.
+    
+    Args:
+        auth: User login credentials.
+        
+    Returns:
+        Access token and user metadata.
+    """
     db = get_database()
-    user = await db["users"].find_one({"email": auth.email, "password": auth.password})
-    if not user:
+    user = await db["users"].find_one({"email": auth.email})
+    if not user or not verify_password(auth.password, user["password"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
-    return {"message": "Login successful", "user_id": auth.email, "role": user.get("role", "mentee")}
+    access_token = create_access_token(subject=auth.email)
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user_id": auth.email,
+        "role": user.get("role", "mentee")
+    }

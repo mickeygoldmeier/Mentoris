@@ -21,7 +21,9 @@ const DirectMessages = ({ currentUser, isOpen, onClose }) => {
 
     const fetchConversations = async () => {
         try {
-            const res = await fetch(`http://localhost:8000/messaging/conversations/${currentUser.user_id}`);
+            const res = await fetch(`http://localhost:8000/messaging/conversations/${currentUser.user_id}`, {
+                headers: { 'Authorization': `Bearer ${currentUser.access_token}` }
+            });
             const data = await res.json();
             setConversations(data);
         } catch (err) {
@@ -31,7 +33,9 @@ const DirectMessages = ({ currentUser, isOpen, onClose }) => {
 
     const fetchMessages = async (convId) => {
         try {
-            const res = await fetch(`http://localhost:8000/messaging/history/${convId}`);
+            const res = await fetch(`http://localhost:8000/messaging/history/${convId}`, {
+                headers: { 'Authorization': `Bearer ${currentUser.access_token}` }
+            });
             const data = await res.json();
             setMessages(data);
         } catch (err) {
@@ -48,7 +52,8 @@ const DirectMessages = ({ currentUser, isOpen, onClose }) => {
         try {
             setLoading(true);
             const res = await fetch(`http://localhost:8000/messaging/send?recipient_id=${recipientId}&sender_id=${currentUser.user_id}&content=${encodeURIComponent(newMessage)}`, {
-                method: 'POST'
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${currentUser.access_token}` }
             });
             const data = await res.json();
             setMessages([...messages, data]);
