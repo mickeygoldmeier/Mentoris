@@ -1,9 +1,12 @@
 from datetime import datetime, UTC
-from fastapi import APIRouter, HTTPException
+from typing import List
+from fastapi import APIRouter, HTTPException, Depends
 from ...schemas.schemas import ChatMessage, ChatResponse
 from ...db.mongodb import get_database
 from ...services.ai_service import ai_service
 from ..deps import get_current_user
+import os
+import urllib.parse
 
 router = APIRouter()
 
@@ -11,33 +14,28 @@ router = APIRouter()
 async def get_chat_history(user_id: str, current_user: dict = Depends(get_current_user)) -> List[dict]:
     """
     Fetch the AI chat history for a specific user.
-    
-    Args:
-        user_id: The ID of the user.
-        current_user: The currently authenticated user.
-        
-    Returns:
-        A list of past chat messages.
     """
-    if user_id != current_user["email"]:
+    log_path = r"C:\Users\mmgol\Documents\projects\side-projects\mentoris\backend\backend_debug.log"
+    
+    # Explicitly decode just in case
+    decoded_user_id = urllib.parse.unquote(user_id)
+    
+    with open(log_path, 'a') as f:
+        f.write(f"DEBUG: get_chat_history - Raw: '{user_id}', Decoded: '{decoded_user_id}', Current: '{current_user.get('email')}'\n")
+    
+    if decoded_user_id.lower() != current_user["email"].lower():
         raise HTTPException(status_code=403, detail="Not authorized to access this history")
+    
     db = get_database()
-    history = await db["chats"].find({"user_id": user_id}, {"_id": 0}).sort("timestamp", 1).to_list(length=100)
+    history = await db["chats"].find({"user_id": decoded_user_id}, {"_id": 0}).sort("timestamp", 1).to_list(length=100)
     return history
 
 @router.post("/", response_model=ChatResponse)
 async def chat_with_ai(message: ChatMessage, current_user: dict = Depends(get_current_user)) -> ChatResponse:
     """
     Interact with the AI assistant.
-    
-    Args:
-        message: The message from the user.
-        current_user: The currently authenticated user.
-        
-    Returns:
-        The AI's response.
     """
-    if message.user_id != current_user["email"]:
+    if message.user_id.lower() != current_user["email"].lower():
         raise HTTPException(status_code=403, detail="Cannot chat as another user")
     try:
         db = get_database()

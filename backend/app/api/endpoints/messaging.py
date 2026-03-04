@@ -20,7 +20,9 @@ async def get_conversations(user_id: str, current_user: dict = Depends(get_curre
     Returns:
         A list of conversations the user is a participant in.
     """
-    if user_id != current_user["email"]:
+    if user_id.lower() != current_user["email"].lower():
+        with open(r"C:\Users\mmgol\Documents\projects\side-projects\mentoris\backend\backend_debug.log", 'a') as f:
+            f.write(f"DEBUG: get_conversations - Auth fail: Requesting {user_id.lower()} for {current_user['email'].lower()}\n")
         raise HTTPException(status_code=403, detail="Not authorized to access these conversations")
     db = get_database()
     # Find conversations where the user is a participant
@@ -48,7 +50,10 @@ async def send_message(recipient_id: str, sender_id: str, content: str, current_
     Returns:
         The created message document.
     """
-    if sender_id != current_user["email"]:
+    sender_id = sender_id.lower()
+    recipient_id = recipient_id.lower()
+    
+    if sender_id != current_user["email"].lower():
         raise HTTPException(status_code=403, detail="Cannot send message as another user")
     db = get_database()
     
@@ -107,7 +112,7 @@ async def get_message_history(conversation_id: str, current_user: dict = Depends
     
     # Check if current_user is a participant in this conversation
     conv = await db["conversations"].find_one({"_id": ObjectId(conversation_id)})
-    if not conv or current_user["email"] not in conv["participants"]:
+    if not conv or current_user["email"].lower() not in [p.lower() for p in conv["participants"]]:
          raise HTTPException(status_code=403, detail="Not authorized to access this conversation")
     messages = await db["messages"].find(
         {"conversation_id": conversation_id}
