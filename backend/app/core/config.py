@@ -10,6 +10,14 @@ class Settings(BaseSettings):
     DATABASE_NAME: str = "mentoris_db"
     GEMINI_API_KEY: str = ""
     SECRET_KEY: str = "supersecretkey_replace_this_in_production"
+    
+    # CORS
+    BACKEND_CORS_ORIGINS: list[str] = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:3000",
+        "http://localhost:8080",
+    ]
 
     model_config = SettingsConfigDict(
         env_file=os.path.join(os.path.dirname(__file__), "../../.env"),

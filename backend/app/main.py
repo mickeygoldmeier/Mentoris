@@ -13,7 +13,7 @@ app = FastAPI(
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=settings.BACKEND_CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -29,11 +29,11 @@ async def shutdown_event():
     await close_mongo_connection()
 
 # Routers
-app.include_router(auth.router, tags=["auth"])
-app.include_router(mentors.router, prefix="/mentors", tags=["mentors"])
-app.include_router(chat.router, prefix="/chat", tags=["chat"])
-app.include_router(messaging.router, prefix="/messaging", tags=["messaging"])
-app.include_router(bookings.router, prefix="/bookings", tags=["bookings"])
+app.include_router(auth.router, prefix=settings.API_V1_STR, tags=["auth"])
+app.include_router(mentors.router, prefix=f"{settings.API_V1_STR}/mentors", tags=["mentors"])
+app.include_router(chat.router, prefix=f"{settings.API_V1_STR}/chat", tags=["chat"])
+app.include_router(messaging.router, prefix=f"{settings.API_V1_STR}/messaging", tags=["messaging"])
+app.include_router(bookings.router, prefix=f"{settings.API_V1_STR}/bookings", tags=["bookings"])
 
 
 if __name__ == "__main__":
