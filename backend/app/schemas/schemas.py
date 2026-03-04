@@ -16,6 +16,7 @@ class ContactInfo(BaseModel):
     free_text: Optional[str] = None
 
 class MentorBase(BaseModel):
+    user_id: Optional[str] = None
     name: str = Field(..., alias="טוויטר / שם")
     fields: str = Field(..., alias="באיזה תחומים אתם מציעים מנטורינג?")
     background: str = Field(..., alias="רקע רלוונטי")
@@ -27,6 +28,25 @@ class MentorBase(BaseModel):
     class Config:
         populate_by_name = True
 
+class Message(BaseModel):
+    sender_id: str
+    content: str
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+class Conversation(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    participants: List[str]  # user_ids
+    last_message: Optional[Message] = None
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+class BookingRequest(BaseModel):
+    mentor_id: str
+    mentee_id: str
+    suggested_time: str
+    topic: str
+    status: str = "pending" # pending, accepted, rejected
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
 class UserAuth(BaseModel):
     email: str
     password: str
@@ -36,3 +56,4 @@ class UserAuth(BaseModel):
 class UserBase(BaseModel):
     email: str
     created_at: datetime
+
