@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
+const API_BASE_URL = 'http://localhost:8000/api/v1';
+
 const MentorDashboard = ({ currentUser, isOpen, onClose }) => {
     const [bookings, setBookings] = useState([]);
     const [stats, setStats] = useState({ totalTasks: 0, pendingTasks: 0 });
@@ -12,9 +14,13 @@ const MentorDashboard = ({ currentUser, isOpen, onClose }) => {
     }, [isOpen, currentUser]);
 
     const fetchBookings = async () => {
+        if (!currentUser?.access_token || String(currentUser.access_token) === 'undefined' || String(currentUser.access_token) === 'null') {
+            console.error("Missing or malformed credentials for fetchBookings");
+            return;
+        }
         try {
             setLoading(true);
-            const res = await fetch(`http://localhost:8000/bookings/mentor/${currentUser.user_id}`, {
+            const res = await fetch(`${API_BASE_URL}/bookings/mentor/${currentUser.user_id}`, {
                 headers: { 'Authorization': `Bearer ${currentUser.access_token}` }
             });
             const data = await res.json();
@@ -30,8 +36,9 @@ const MentorDashboard = ({ currentUser, isOpen, onClose }) => {
     };
 
     const handleStatusUpdate = async (bookingId, newStatus) => {
+        if (!currentUser?.access_token || currentUser.access_token === 'undefined') return;
         try {
-            const res = await fetch(`http://localhost:8000/bookings/status/${bookingId}?status=${newStatus}`, {
+            const res = await fetch(`${API_BASE_URL}/bookings/status/${bookingId}?status=${newStatus}`, {
                 method: 'PATCH',
                 headers: { 'Authorization': `Bearer ${currentUser.access_token}` }
             });

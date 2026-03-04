@@ -4,6 +4,10 @@ import Auth from './components/Auth';
 import Header from './components/Header';
 import MentorCard from './components/MentorCard';
 import ChatWindow from './components/ChatWindow';
+import DirectMessages from './components/DirectMessages';
+import MentorDashboard from './components/MentorDashboard';
+
+const API_BASE_URL = 'http://localhost:8000/api/v1';
 
 function App() {
   const [mentors, setMentors] = useState([]);
@@ -12,6 +16,9 @@ function App() {
   const [messages, setMessages] = useState([{ role: 'ai', text: 'היי! אני העוזר החכם של Mentoris. איך אוכל לעזור לך למצוא מנטור היום?' }]);
   const [chatInput, setChatInput] = useState('');
   const [loadingChat, setLoadingChat] = useState(false);
+  const [dmOpen, setDmOpen] = useState(false);
+  const [dashboardOpen, setDashboardOpen] = useState(false);
+  const [initialRecipientId, setInitialRecipientId] = useState(null);
 
   // Auth State
   const [currentUser, setCurrentUser] = useState(JSON.parse(localStorage.getItem('mentoris_user')));
@@ -28,23 +35,30 @@ function App() {
   const [mentorPhone, setMentorPhone] = useState('');
 
   useEffect(() => {
-    fetch('http://localhost:8000/mentors')
+    fetch(`${API_BASE_URL}/mentors/`)
       .then(res => res.json())
       .then(data => setMentors(data))
       .catch(err => console.error("Error fetching mentors:", err));
 
-    if (currentUser) {
+    if (currentUser?.access_token && currentUser.access_token !== 'undefined') {
       loadHistory(currentUser.user_id);
     }
   }, [currentUser]);
 
   const loadHistory = async (userId) => {
+    if (!currentUser?.access_token || String(currentUser.access_token) === 'undefined' || String(currentUser.access_token) === 'null') return;
     try {
-      const res = await fetch(`http://localhost:8000/history/${userId}`, {
+      const encodedId = encodeURIComponent(userId);
+      const res = await fetch(`${API_BASE_URL}/chat/history/${encodedId}`, {
         headers: {
           'Authorization': `Bearer ${currentUser.access_token}`
         }
       });
+      if (res.status === 401) {
+        console.warn("Session expired (401). Logging out.");
+        handleLogout();
+        return;
+      }
       const data = await res.json();
       if (data.length > 0) {
         const formatted = data.flatMap(chat => [
@@ -84,7 +98,7 @@ function App() {
     }
 
     try {
-      const res = await fetch(`http://localhost:8000/${endpoint}`, {
+      const res = await fetch(`${API_BASE_URL}/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -134,7 +148,7 @@ function App() {
   });
 
   const handleSendMessage = async () => {
-    if (!chatInput.trim() || !currentUser) return;
+    if (!chatInput.trim() || !currentUser || !currentUser.access_token || currentUser.access_token === 'undefined') return;
 
     const newMessages = [...messages, { role: 'user', text: chatInput }];
     setMessages(newMessages);
@@ -142,7 +156,7 @@ function App() {
     setLoadingChat(true);
 
     try {
-      const response = await fetch('http://localhost:8000/chat', {
+      const response = await fetch(`${API_BASE_URL}/chat/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -208,7 +222,10 @@ function App() {
             index={index}
             setSearchTerm={setSearchTerm}
             currentUser={currentUser}
-            onOpenDMs={() => setDmOpen(true)}
+            onOpenDMs={(mentorId) => {
+              setInitialRecipientId(mentorId);
+              setDmOpen(true);
+            }}
           />
         ))}
       </div>
@@ -226,7 +243,11 @@ function App() {
       <DirectMessages
         currentUser={currentUser}
         isOpen={dmOpen}
-        onClose={() => setDmOpen(false)}
+        onClose={() => {
+          setDmOpen(false);
+          setInitialRecipientId(null);
+        }}
+        initialRecipientId={initialRecipientId}
       />
 
       <MentorDashboard

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 
-const DirectMessages = ({ currentUser, isOpen, onClose }) => {
+const API_BASE_URL = 'http://localhost:8000/api/v1';
+
+const DirectMessages = ({ currentUser, isOpen, onClose, initialRecipientId }) => {
     const [conversations, setConversations] = useState([]);
     const [activeConversation, setActiveConversation] = useState(null);
     const [messages, setMessages] = useState([]);
@@ -8,36 +10,86 @@ const DirectMessages = ({ currentUser, isOpen, onClose }) => {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        if (isOpen && currentUser) {
+        let interval;
+        if (isOpen && currentUser?.access_token && String(currentUser.access_token) !== 'undefined') {
             fetchConversations();
+            interval = setInterval(fetchConversations, 5000); // Polling every 5 seconds
         }
-    }, [isOpen, currentUser]);
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [isOpen, currentUser?.access_token]);
 
     useEffect(() => {
-        if (activeConversation) {
+        let interval;
+        if (activeConversation && activeConversation._id !== 'new') {
             fetchMessages(activeConversation._id);
+            interval = setInterval(() => fetchMessages(activeConversation._id), 3000); // Poll messages every 3 seconds
         }
+        return () => {
+            if (interval) clearInterval(interval);
+        };
     }, [activeConversation]);
 
+    // Handle opening DM with a specific person from a mentor card
+    useEffect(() => {
+        if (isOpen && initialRecipientId) {
+            const existing = conversations.find(c => c.participants.includes(initialRecipientId));
+            if (existing) {
+                setActiveConversation(existing);
+            } else {
+                // Temporary "phantom" conversation for new recipient
+                setActiveConversation({
+                    _id: 'new',
+                    participants: [currentUser.user_id, initialRecipientId],
+                    isNew: true
+                });
+                setMessages([]);
+            }
+        }
+    }, [isOpen, initialRecipientId, conversations]);
+
     const fetchConversations = async () => {
+        if (!currentUser?.user_id || !currentUser?.access_token || String(currentUser.access_token) === 'undefined' || String(currentUser.access_token) === 'null') {
+            console.error("Missing or malformed credentials for fetchConversations");
+            return;
+        }
         try {
-            const res = await fetch(`http://localhost:8000/messaging/conversations/${currentUser.user_id}`, {
+            const encodedId = encodeURIComponent(currentUser.user_id);
+            const res = await fetch(`${API_BASE_URL}/messaging/conversations/${encodedId}`, {
                 headers: { 'Authorization': `Bearer ${currentUser.access_token}` }
             });
+            if (!res.ok) {
+                console.error(`fetchConversations failed: ${res.status} ${await res.text()}`);
+                return;
+            }
             const data = await res.json();
-            setConversations(data);
+            if (Array.isArray(data)) {
+                setConversations(data);
+            } else {
+                setConversations([]);
+            }
         } catch (err) {
             console.error("Error fetching conversations:", err);
         }
     };
 
     const fetchMessages = async (convId) => {
+        if (convId === 'new' || !currentUser?.access_token || String(currentUser.access_token) === 'undefined' || String(currentUser.access_token) === 'null') return;
         try {
-            const res = await fetch(`http://localhost:8000/messaging/history/${convId}`, {
+            const res = await fetch(`${API_BASE_URL}/messaging/history/${convId}`, {
                 headers: { 'Authorization': `Bearer ${currentUser.access_token}` }
             });
+            if (!res.ok) {
+                console.error(`fetchMessages failed: ${res.status} ${await res.text()}`);
+                return;
+            }
             const data = await res.json();
-            setMessages(data);
+            if (Array.isArray(data)) {
+                setMessages(data);
+            } else {
+                setMessages([]);
+            }
         } catch (err) {
             console.error("Error fetching messages:", err);
         }
@@ -51,14 +103,22 @@ const DirectMessages = ({ currentUser, isOpen, onClose }) => {
 
         try {
             setLoading(true);
-            const res = await fetch(`http://localhost:8000/messaging/send?recipient_id=${recipientId}&sender_id=${currentUser.user_id}&content=${encodeURIComponent(newMessage)}`, {
+            const res = await fetch(`${API_BASE_URL}/messaging/send?recipient_id=${encodeURIComponent(recipientId)}&sender_id=${encodeURIComponent(currentUser.user_id)}&content=${encodeURIComponent(newMessage)}`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${currentUser.access_token}` }
             });
             const data = await res.json();
-            setMessages([...messages, data]);
-            setNewMessage('');
-            fetchConversations(); // Refresh last message in sidebar
+
+            if (activeConversation.isNew) {
+                // Refresh conversations to get the real ID and switch to it
+                await fetchConversations();
+                setNewMessage('');
+                // The useEffect will catch the new conversation and set it as active
+            } else {
+                setMessages([...messages, data]);
+                setNewMessage('');
+                fetchConversations(); // Refresh last message in sidebar
+            }
         } catch (err) {
             console.error("Error sending message:", err);
         } finally {
@@ -77,13 +137,18 @@ const DirectMessages = ({ currentUser, isOpen, onClose }) => {
                         <button className="close-btn" onClick={onClose}>&times;</button>
                     </div>
                     <div className="conversation-list">
+                        {conversations.length === 0 && !activeConversation?.isNew && (
+                            <div className="dm-empty-sidebar">אין שיחות פעילות</div>
+                        )}
                         {conversations.map(conv => (
                             <div
                                 key={conv._id}
                                 className={`conversation-item ${activeConversation?._id === conv._id ? 'active' : ''}`}
                                 onClick={() => setActiveConversation(conv)}
                             >
-                                <div className="conv-user">{conv.participants.find(p => p !== currentUser.user_id)}</div>
+                                <div className="conv-user">
+                                    {conv.participants.find(p => p.toLowerCase() !== currentUser.user_id.toLowerCase())}
+                                </div>
                                 <div className="conv-last-msg">{conv.last_message?.content}</div>
                             </div>
                         ))}
@@ -97,10 +162,13 @@ const DirectMessages = ({ currentUser, isOpen, onClose }) => {
                                 <h4>{activeConversation.participants.find(p => p !== currentUser.user_id)}</h4>
                             </div>
                             <div className="dm-messages">
+                                {activeConversation.isNew && (
+                                    <div className="new-convo-hint">התחל שיחה חדשה עם מנטור זה</div>
+                                )}
                                 {messages.map((msg, i) => (
                                     <div key={i} className={`dm-message ${msg.sender_id === currentUser.user_id ? 'sent' : 'received'}`}>
                                         <div className="msg-content">{msg.content}</div>
-                                        <div className="msg-time">{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                        <div className="msg-time">{msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'כרגע'}</div>
                                     </div>
                                 ))}
                             </div>

@@ -32,7 +32,7 @@ function MentorCard({ mentor, index, setSearchTerm, onOpenDMs }) {
             <div className="mentor-contact-container">
                 <button
                     className="contact-link message"
-                    onClick={() => onOpenDMs(mentor.user_id || mentor.email)}
+                    onClick={() => onOpenDMs(mentor.user_id || mentor.contact?.email || mentor.email)}
                 >
                     💬 הודעה ישירה
                 </button>
