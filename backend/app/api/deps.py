@@ -1,50 +1,60 @@
+import logging
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from pydantic import ValidationError
-import os
+
 from ..core.config import settings
 from ..core.security import ALGORITHM
 from ..db.mongodb import get_database
+
+logger = logging.getLogger(__name__)
 
 reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_STR}/login"
 )
 
+
 async def get_current_user(token: str = Depends(reusable_oauth2)) -> dict:
     """
     Validate the JWT access token and return the current authenticated user.
+
+    Args:
+        token: The Bearer token extracted from the Authorization header.
+
+    Returns:
+        The user document from MongoDB.
+
+    Raises:
+        HTTPException: 401 if token is invalid, 404 if user not found.
     """
-    log_path = r"C:\Users\mmgol\Documents\projects\side-projects\mentoris\backend\backend_debug.log"
-    if not token or len(token.split('.')) < 3:
-        with open(log_path, 'a') as f:
-            f.write(f"DEBUG: get_current_user - Malformed or missing token: '{token[:10]}...'\n")
     try:
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[ALGORITHM]
         )
         user_id = payload.get("sub")
         if user_id is None:
-            with open(log_path, 'a') as f:
-                f.write("DEBUG: get_current_user - 'sub' claim missing in payload\n")
+            logger.warning("JWT payload missing 'sub' claim")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Could not validate credentials",
             )
     except (JWTError, ValidationError) as e:
-        with open(log_path, 'a') as f:
-            f.write(f"DEBUG: get_current_user - JWT Validation failed: {e}.\n")
+        logger.warning("JWT validation failed: %s", e)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
         )
-    
+
     db = get_database()
     user = await db["users"].find_one({"email": user_id})
-    
+
     if not user:
-        with open(log_path, 'a') as f:
-            f.write(f"DEBUG: get_current_user - User not found for email '{user_id}'\n")
-        raise HTTPException(status_code=404, detail="User not found")
-        
+        logger.warning("User not found for email '%s'", user_id)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
     return user

@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useAuth } from '../context/AuthContext.jsx';
+import { API_BASE_URL } from '../config';
 
-const API_BASE_URL = 'http://localhost:8000/api/v1';
-
-const DirectMessages = ({ currentUser, isOpen, onClose, initialRecipientId }) => {
+const DirectMessages = ({ isOpen, onClose, initialRecipientId }) => {
+    const { currentUser } = useAuth();
     const [conversations, setConversations] = useState([]);
     const [activeConversation, setActiveConversation] = useState(null);
     const [messages, setMessages] = useState([]);
@@ -29,13 +30,10 @@ const DirectMessages = ({ currentUser, isOpen, onClose, initialRecipientId }) =>
             socket.onmessage = (event) => {
                 const data = JSON.parse(event.data);
                 if (data.type === 'new_message') {
-                    // If this message belongs to the current conversation, update messages and mark as read
                     if (activeConversation && activeConversation._id === data.conversation_id) {
                         setMessages(prev => [...prev, data.message]);
                         markAsRead(data.conversation_id);
                     }
-
-                    // Update conversation list to show new last message
                     fetchConversations();
                 }
             };
@@ -60,14 +58,12 @@ const DirectMessages = ({ currentUser, isOpen, onClose, initialRecipientId }) =>
         }
     }, [activeConversation?._id]);
 
-    // Handle opening DM with a specific person from a mentor card
     useEffect(() => {
         if (isOpen && initialRecipientId) {
             const existing = conversations.find(c => c.participants.includes(initialRecipientId));
             if (existing) {
                 setActiveConversation(existing);
             } else {
-                // Temporary "phantom" conversation for new recipient
                 setActiveConversation({
                     _id: 'new',
                     participants: [currentUser.user_id, initialRecipientId],
@@ -116,7 +112,6 @@ const DirectMessages = ({ currentUser, isOpen, onClose, initialRecipientId }) =>
             const data = await res.json();
             if (Array.isArray(data)) {
                 setMessages(data);
-                // Also mark as read when fetching messages
                 markAsRead(convId);
             } else {
                 setMessages([]);
@@ -133,7 +128,6 @@ const DirectMessages = ({ currentUser, isOpen, onClose, initialRecipientId }) =>
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${currentUser.access_token}` }
             });
-            // Update local state quietly
             setConversations(prev => prev.map(c =>
                 c._id === convId ? { ...c, unread_by: (c.unread_by || []).filter(email => email !== currentUser.user_id) } : c
             ));
@@ -154,17 +148,14 @@ const DirectMessages = ({ currentUser, isOpen, onClose, initialRecipientId }) =>
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${currentUser.access_token}` }
             });
-            const data = await res.json();
+            await res.json();
 
             if (activeConversation.isNew) {
-                // For new conversations, we still refresh to get the real ID
                 await fetchConversations();
                 setNewMessage('');
             } else {
                 setNewMessage('');
-                // We no longer manually setMessages(prev => [...prev, data]);
-                // The WebSocket notification 'new_message' will handle it for consistency.
-                fetchConversations(); // Still refresh sidebar last message
+                fetchConversations();
             }
         } catch (err) {
             console.error("Error sending message:", err);

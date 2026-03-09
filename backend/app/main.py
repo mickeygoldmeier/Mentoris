@@ -1,13 +1,24 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .core.config import settings
 from .db.mongodb import connect_to_mongo, close_mongo_connection
 from .api.endpoints import auth, mentors, chat, messaging, bookings
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage startup and shutdown lifecycle events."""
+    await connect_to_mongo()
+    yield
+    await close_mongo_connection()
+
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
-    openapi_url=f"{settings.API_V1_STR}/openapi.json"
+    openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    lifespan=lifespan
 )
 
 # CORS
@@ -18,15 +29,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Lifecycle
-@app.on_event("startup")
-async def startup_event():
-    await connect_to_mongo()
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    await close_mongo_connection()
 
 # Routers
 app.include_router(auth.router, prefix=settings.API_V1_STR, tags=["auth"])

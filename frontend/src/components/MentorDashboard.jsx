@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext.jsx';
+import { API_BASE_URL } from '../config';
 
-const API_BASE_URL = 'http://localhost:8000/api/v1';
-
-const MentorDashboard = ({ currentUser, isOpen, onClose }) => {
+const MentorDashboard = ({ isOpen, onClose }) => {
+    const { currentUser } = useAuth();
     const [bookings, setBookings] = useState([]);
     const [stats, setStats] = useState({ totalTasks: 0, pendingTasks: 0 });
     const [loading, setLoading] = useState(false);
