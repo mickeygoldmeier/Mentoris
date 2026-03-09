@@ -150,11 +150,22 @@ const DirectMessages = ({ isOpen, onClose, initialRecipientId }) => {
             });
             await res.json();
 
+            setNewMessage('');
+
             if (activeConversation.isNew) {
-                await fetchConversations();
-                setNewMessage('');
+                // Manually fetch the new conversation list to get the real MongoDB _id
+                const convRes = await fetch(`${API_BASE_URL}/messaging/conversations/${encodeURIComponent(currentUser.user_id)}`, {
+                    headers: { 'Authorization': `Bearer ${currentUser.access_token}` }
+                });
+                const convData = await convRes.json();
+                setConversations(convData);
+
+                // Set the newly created conversation as active so messages stream in
+                const newConv = convData.find(c => c.participants.includes(recipientId));
+                if (newConv) {
+                    setActiveConversation(newConv);
+                }
             } else {
-                setNewMessage('');
                 fetchConversations();
             }
         } catch (err) {
