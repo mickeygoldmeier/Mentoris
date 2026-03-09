@@ -1171,23 +1171,48 @@ input:focus {
 }
 
 /* Mobile Responsive — Messaging */
+.absolute-close {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 100;
+}
+
+.mobile-only {
+  display: none;
+}
+
 @media (max-width: 768px) {
+  .mobile-only {
+    display: flex;
+    align-items: center;
+    background: none;
+    border: none;
+    color: var(--accent-color);
+    font-size: 1rem;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+    margin-left: 1rem;
+  }
+
   .dm-container {
-    flex-direction: column;
     width: 95%;
     max-height: 90vh;
   }
 
   .dm-sidebar {
     width: 100%;
-    max-height: 35vh;
-    border-right: none;
-    border-bottom: 1px solid var(--glass-border);
+    border-left: none;
   }
 
-  .dm-main {
-    flex: 1;
-    min-height: 0;
+  /* Sliding pane behavior */
+  .dm-container:not(.chat-active) .dm-main {
+    display: none;
+  }
+
+  .dm-container.chat-active .dm-sidebar {
+    display: none;
   }
 
   .dashboard-container {

@@ -168,11 +168,11 @@ const DirectMessages = ({ isOpen, onClose, initialRecipientId }) => {
 
     return (
         <div className="dm-overlay">
-            <div className="dm-container glass">
+            <div className={`dm-container glass ${activeConversation ? 'chat-active' : ''}`}>
+                <button className="close-btn absolute-close" onClick={onClose}>&times;</button>
                 <div className="dm-sidebar">
                     <div className="dm-sidebar-header">
                         <h3>הודעות</h3>
-                        <button className="close-btn" onClick={onClose}>&times;</button>
                     </div>
                     <div className="conversation-list">
                         {conversations.length === 0 && !activeConversation?.isNew && (
@@ -203,6 +203,9 @@ const DirectMessages = ({ isOpen, onClose, initialRecipientId }) => {
                     {activeConversation ? (
                         <>
                             <div className="dm-header">
+                                <button className="back-btn mobile-only" onClick={() => setActiveConversation(null)}>
+                                    &rarr; חזור
+                                </button>
                                 <h4>{activeConversation.participants.find(p => p !== currentUser.user_id)}</h4>
                             </div>
                             <div className="dm-messages">
