@@ -37,7 +37,7 @@ async def signup(auth: UserAuth) -> dict:
         # Handle structured vs string contact
         contact_data = auth.mentor_data.contact
         if isinstance(contact_data, ContactInfo):
-            contact_dict = contact_data.dict()
+            contact_dict = contact_data.model_dump()
         elif isinstance(contact_data, str):
             contact_dict = {"free_text": contact_data, "email": auth.email.lower()}
         else:
