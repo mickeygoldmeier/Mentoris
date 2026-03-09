@@ -179,6 +179,7 @@ function App() {
           setInitialRecipientId(null);
         }}
         initialRecipientId={initialRecipientId}
+        onClearInitialRecipient={() => setInitialRecipientId(null)}
       />
 
       <MentorDashboard

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { API_BASE_URL } from '../config';
 
-const DirectMessages = ({ isOpen, onClose, initialRecipientId }) => {
+const DirectMessages = ({ isOpen, onClose, initialRecipientId, onClearInitialRecipient }) => {
     const { currentUser } = useAuth();
     const [conversations, setConversations] = useState([]);
     const [activeConversation, setActiveConversation] = useState(null);
@@ -63,6 +63,7 @@ const DirectMessages = ({ isOpen, onClose, initialRecipientId }) => {
             const existing = conversations.find(c => c.participants.includes(initialRecipientId));
             if (existing) {
                 setActiveConversation(existing);
+                if (onClearInitialRecipient) onClearInitialRecipient();
             } else {
                 setActiveConversation({
                     _id: 'new',
@@ -164,6 +165,7 @@ const DirectMessages = ({ isOpen, onClose, initialRecipientId }) => {
                 const newConv = convData.find(c => c.participants.includes(recipientId));
                 if (newConv) {
                     setActiveConversation(newConv);
+                    if (onClearInitialRecipient) onClearInitialRecipient();
                 }
             } else {
                 fetchConversations();
@@ -195,7 +197,10 @@ const DirectMessages = ({ isOpen, onClose, initialRecipientId }) => {
                                 <div
                                     key={conv._id}
                                     className={`conversation-item ${activeConversation?._id === conv._id ? 'active' : ''} ${isUnread ? 'unread' : ''}`}
-                                    onClick={() => setActiveConversation(conv)}
+                                    onClick={() => {
+                                        setActiveConversation(conv);
+                                        if (onClearInitialRecipient) onClearInitialRecipient();
+                                    }}
                                 >
                                     <div className="conv-content">
                                         <div className="conv-user">
@@ -214,7 +219,10 @@ const DirectMessages = ({ isOpen, onClose, initialRecipientId }) => {
                     {activeConversation ? (
                         <>
                             <div className="dm-header">
-                                <button className="back-btn mobile-only" onClick={() => setActiveConversation(null)}>
+                                <button className="back-btn mobile-only" onClick={() => {
+                                    setActiveConversation(null);
+                                    if (onClearInitialRecipient) onClearInitialRecipient();
+                                }}>
                                     &rarr; חזור
                                 </button>
                                 <h4>{activeConversation.participants.find(p => p !== currentUser.user_id)}</h4>
