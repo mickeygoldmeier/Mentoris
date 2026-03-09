@@ -1,27 +1,45 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useAuth } from '../context/AuthContext.jsx';
 
-function Auth({
-    authMode,
-    setAuthMode,
-    email,
-    setEmail,
-    password,
-    setPassword,
-    authError,
-    handleAuth,
-    isMentor,
-    setIsMentor,
-    mentorName,
-    setMentorName,
-    mentorFields,
-    setMentorFields,
-    mentorBackground,
-    setMentorBackground,
-    mentorCalendar,
-    setMentorCalendar,
-    mentorPhone,
-    setMentorPhone
-}) {
+function Auth() {
+    const { authError, login, signup } = useAuth();
+
+    const [authMode, setAuthMode] = useState('login');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+
+    const [isMentor, setIsMentor] = useState(false);
+    const [mentorName, setMentorName] = useState('');
+    const [mentorFields, setMentorFields] = useState('');
+    const [mentorBackground, setMentorBackground] = useState('');
+    const [mentorCalendar, setMentorCalendar] = useState('');
+    const [mentorPhone, setMentorPhone] = useState('');
+
+    const handleAuth = async (e) => {
+        e.preventDefault();
+        if (authMode === 'login') {
+            await login(email, password);
+        } else {
+            const role = isMentor ? 'mentor' : 'mentee';
+            let mentorData = null;
+            if (isMentor) {
+                mentorData = {
+                    name: email.split('@')[0],
+                    role: mentorName,
+                    fields: mentorFields,
+                    background: mentorBackground,
+                    contact: {
+                        email: email,
+                        calendar: mentorCalendar,
+                        phone: mentorPhone
+                    }
+                };
+            }
+            await signup(email, password, role, mentorData);
+        }
+        setPassword('');
+    };
+
     return (
         <div className="auth-overlay">
             <form className="auth-form" onSubmit={handleAuth}>
@@ -38,6 +56,7 @@ function Auth({
 
                 <div className="form-group">
                     <input
+                        id="auth-email"
                         type="email"
                         placeholder="אימייל"
                         value={email}
@@ -48,6 +67,7 @@ function Auth({
 
                 <div className="form-group">
                     <input
+                        id="auth-password"
                         type="password"
                         placeholder="סיסמה"
                         value={password}

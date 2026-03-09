@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './index.css';
+import { useAuth } from './context/AuthContext.jsx';
+import { API_BASE_URL } from './config';
 import Auth from './components/Auth';
 import Header from './components/Header';
 import MentorCard from './components/MentorCard';
@@ -7,9 +9,9 @@ import ChatWindow from './components/ChatWindow';
 import DirectMessages from './components/DirectMessages';
 import MentorDashboard from './components/MentorDashboard';
 
-const API_BASE_URL = 'http://localhost:8000/api/v1';
-
 function App() {
+  const { currentUser, logout } = useAuth();
+
   const [mentors, setMentors] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [chatOpen, setChatOpen] = useState(false);
@@ -19,21 +21,6 @@ function App() {
   const [dmOpen, setDmOpen] = useState(false);
   const [dashboardOpen, setDashboardOpen] = useState(false);
   const [initialRecipientId, setInitialRecipientId] = useState(null);
-
-  // Auth State
-  const [currentUser, setCurrentUser] = useState(JSON.parse(localStorage.getItem('mentoris_user')));
-  const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [authError, setAuthError] = useState('');
-
-  const [isMentor, setIsMentor] = useState(false);
-  const [mentorName, setMentorName] = useState('');
-  const [mentorFields, setMentorFields] = useState('');
-  const [mentorBackground, setMentorBackground] = useState('');
-  const [mentorCalendar, setMentorCalendar] = useState('');
-  const [mentorPhone, setMentorPhone] = useState('');
-
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -66,7 +53,7 @@ function App() {
         }
       };
       fetchUnread();
-      interval = setInterval(fetchUnread, 10000); // Check every 10s
+      interval = setInterval(fetchUnread, 10000);
     }
     return () => clearInterval(interval);
   }, [currentUser]);
@@ -82,7 +69,7 @@ function App() {
       });
       if (res.status === 401) {
         console.warn("Session expired (401). Logging out.");
-        handleLogout();
+        logout();
         return;
       }
       const data = await res.json();
@@ -96,62 +83,6 @@ function App() {
     } catch (err) {
       console.error("Error loading history:", err);
     }
-  };
-
-  const handleAuth = async (e) => {
-    e.preventDefault();
-    setAuthError('');
-    const endpoint = authMode === 'login' ? 'login' : 'signup';
-
-    const payload = {
-      email,
-      password,
-      role: isMentor && authMode === 'signup' ? 'mentor' : 'mentee'
-    };
-
-    if (isMentor && authMode === 'signup') {
-      payload.mentor_data = {
-        name: email.split('@')[0], // Use email prefix as default name if not provided
-        role: mentorName, // This field is used for 'Role' in Auth.jsx
-        fields: mentorFields,
-        background: mentorBackground,
-        contact: {
-          email: email,
-          calendar: mentorCalendar,
-          phone: mentorPhone
-        }
-      };
-    }
-
-    try {
-      const res = await fetch(`${API_BASE_URL}/${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (res.ok) {
-        // Only store essential info + token
-        const userData = {
-          access_token: data.access_token,
-          user_id: data.user_id,
-          role: data.role
-        };
-        localStorage.setItem('mentoris_user', JSON.stringify(userData));
-        setCurrentUser(userData);
-        setPassword(''); // Clear password from state
-      } else {
-        setAuthError(data.detail || 'שגיאה בתהליך ההתחברות');
-      }
-    } catch (err) {
-      setAuthError('מצטער, חלה שגיאה בחיבור לשרת.');
-    }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('mentoris_user');
-    setCurrentUser(null);
-    setMessages([{ role: 'ai', text: 'היי! אני העוזר החכם של Mentoris. איך אוכל לעזור לך למצוא מנטור היום?' }]);
   };
 
   const filteredMentors = mentors.filter(mentor => {
@@ -195,7 +126,7 @@ function App() {
       });
       const data = await response.json();
       setMessages([...newMessages, { role: 'ai', text: data.response }]);
-    } catch (err) {
+    } catch {
       setMessages([...newMessages, { role: 'ai', text: 'מצטער, חלה שגיאה בחיבור לשרת.' }]);
     } finally {
       setLoadingChat(false);
@@ -203,30 +134,7 @@ function App() {
   };
 
   if (!currentUser) {
-    return (
-      <Auth
-        authMode={authMode}
-        setAuthMode={setAuthMode}
-        email={email}
-        setEmail={setEmail}
-        password={password}
-        setPassword={setPassword}
-        authError={authError}
-        handleAuth={handleAuth}
-        isMentor={isMentor}
-        setIsMentor={setIsMentor}
-        mentorName={mentorName}
-        setMentorName={setMentorName}
-        mentorFields={mentorFields}
-        setMentorFields={setMentorFields}
-        mentorBackground={mentorBackground}
-        setMentorBackground={setMentorBackground}
-        mentorCalendar={mentorCalendar}
-        setMentorCalendar={setMentorCalendar}
-        mentorPhone={mentorPhone}
-        setMentorPhone={setMentorPhone}
-      />
-    );
+    return <Auth />;
   }
 
   return (
@@ -234,8 +142,6 @@ function App() {
       <Header
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
-        currentUser={currentUser}
-        handleLogout={handleLogout}
         onOpenDMs={() => setDmOpen(true)}
         onOpenDashboard={() => setDashboardOpen(true)}
         unreadCount={unreadCount}
@@ -248,7 +154,6 @@ function App() {
             mentor={mentor}
             index={index}
             setSearchTerm={setSearchTerm}
-            currentUser={currentUser}
             onOpenDMs={(mentorId) => {
               setInitialRecipientId(mentorId);
               setDmOpen(true);
@@ -268,7 +173,6 @@ function App() {
       />
 
       <DirectMessages
-        currentUser={currentUser}
         isOpen={dmOpen}
         onClose={() => {
           setDmOpen(false);
@@ -278,7 +182,6 @@ function App() {
       />
 
       <MentorDashboard
-        currentUser={currentUser}
         isOpen={dashboardOpen}
         onClose={() => setDashboardOpen(false)}
       />
