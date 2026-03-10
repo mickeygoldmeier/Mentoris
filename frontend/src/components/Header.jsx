@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
+import logo from '../assets/logo.png';
 
 function Header({ searchTerm, setSearchTerm, onOpenDMs, onOpenDashboard, unreadCount }) {
     const { currentUser, logout } = useAuth();
@@ -7,7 +8,10 @@ function Header({ searchTerm, setSearchTerm, onOpenDMs, onOpenDashboard, unreadC
     return (
         <>
             <header>
-                <h1>Mentoris</h1>
+                <div className="logo-container">
+                    <img src={logo} alt="Mentoris Logo" className="app-logo" />
+                    <h1>Mentoris</h1>
+                </div>
                 <p style={{ color: 'var(--text-dim)' }}>מצאו את המנטור המושלם עבורכם</p>
             </header>
 
