@@ -1,0 +1,18 @@
+fastapi
+uvicorn
+motor
+pymongo
+google-genai
+numpy
+python-bidi
+pydantic-settings
+python-dotenv
+passlib[bcrypt]
+python-jose[cryptography]
+python-multipart
+bcrypt
+
+# Testing
+pytest
+httpx
+pytest-asyncio
