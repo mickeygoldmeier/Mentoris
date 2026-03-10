@@ -177,6 +177,48 @@ const DirectMessages = ({ isOpen, onClose, initialRecipientId, onClearInitialRec
         }
     };
 
+    const renderMessageContent = (content) => {
+        if (!content) return null;
+        
+        let displayContent = content;
+        let calendarButtons = null;
+
+        // Check for calendar links markup
+        const calMatch = content.match(/\[CALENDAR_LINKS\]ics=(.*?)$/);
+        if (calMatch) {
+            displayContent = content.replace(calMatch[0], '').trim();
+            const icsUrl = calMatch[1];
+            
+            calendarButtons = (
+                <div className="msg-calendar-actions">
+                    <a href={icsUrl} target="_blank" rel="noopener noreferrer" className="msg-cal-btn full-width">
+                        הוסף ליומן 📅
+                    </a>
+                </div>
+            );
+        }
+
+        // Render standard URLs
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        const textNodes = displayContent.split(urlRegex).map((part, i) => {
+            if (part.match(urlRegex)) {
+                return (
+                    <a key={`link-${i}`} href={part} target="_blank" rel="noopener noreferrer" className="message-link">
+                        {part}
+                    </a>
+                );
+            }
+            return <span key={`text-${i}`}>{part}</span>;
+        });
+
+        return (
+            <>
+                <div>{textNodes}</div>
+                {calendarButtons}
+            </>
+        );
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -233,7 +275,7 @@ const DirectMessages = ({ isOpen, onClose, initialRecipientId, onClearInitialRec
                                 )}
                                 {messages.map((msg, i) => (
                                     <div key={i} className={`dm-message ${msg.sender_id === currentUser.user_id ? 'sent' : 'received'}`}>
-                                        <div className="msg-content">{msg.content}</div>
+                                        <div className="msg-content">{renderMessageContent(msg.content)}</div>
                                         <div className="msg-time">{msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'כרגע'}</div>
                                     </div>
                                 ))}

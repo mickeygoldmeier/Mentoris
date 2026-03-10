@@ -8,6 +8,7 @@ import MentorCard from './components/MentorCard';
 import ChatWindow from './components/ChatWindow';
 import DirectMessages from './components/DirectMessages';
 import MentorDashboard from './components/MentorDashboard';
+import BookingModal from './components/BookingModal';
 
 function App() {
   const { currentUser, logout } = useAuth();
@@ -22,6 +23,9 @@ function App() {
   const [dashboardOpen, setDashboardOpen] = useState(false);
   const [initialRecipientId, setInitialRecipientId] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [bookingOpen, setBookingOpen] = useState(false);
+  const [bookingMentorId, setBookingMentorId] = useState(null);
+  const [bookingMentorName, setBookingMentorName] = useState('');
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/mentors/`)
@@ -158,6 +162,11 @@ function App() {
               setInitialRecipientId(mentorId);
               setDmOpen(true);
             }}
+            onBookSession={(mentorId, mentorName) => {
+              setBookingMentorId(mentorId);
+              setBookingMentorName(mentorName);
+              setBookingOpen(true);
+            }}
           />
         ))}
       </div>
@@ -185,6 +194,17 @@ function App() {
       <MentorDashboard
         isOpen={dashboardOpen}
         onClose={() => setDashboardOpen(false)}
+      />
+
+      <BookingModal
+        isOpen={bookingOpen}
+        onClose={() => {
+          setBookingOpen(false);
+          setBookingMentorId(null);
+          setBookingMentorName('');
+        }}
+        mentorId={bookingMentorId}
+        mentorName={bookingMentorName}
       />
     </div>
   );

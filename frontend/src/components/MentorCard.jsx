@@ -1,6 +1,6 @@
 import React from 'react';
 
-function MentorCard({ mentor, index, setSearchTerm, onOpenDMs }) {
+function MentorCard({ mentor, index, setSearchTerm, onOpenDMs, onBookSession }) {
 
     return (
         <div className="mentor-card" style={{ animationDelay: `${index * 0.05}s` }}>
@@ -42,7 +42,13 @@ function MentorCard({ mentor, index, setSearchTerm, onOpenDMs }) {
                         📅 קביעת סשן (חיצוני)
                     </a>
                 ) : (
-                    <button className="contact-link calendar" onClick={() => alert("Native booking coming soon!")}>
+                    <button
+                        className="contact-link calendar"
+                        onClick={() => onBookSession(
+                            mentor.user_id || mentor.contact?.email || mentor.email,
+                            mentor["טוויטר / שם"] || mentor.name || "אנונימי"
+                        )}
+                    >
                         📅 בקשת סשן
                     </button>
                 )}
