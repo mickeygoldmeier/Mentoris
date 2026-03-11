@@ -1,3 +1,4 @@
+import certifi
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import MongoClient
 from ..core.config import settings
@@ -11,9 +12,10 @@ class MongoDB:
 mongodb = MongoDB()
 
 async def connect_to_mongo():
-    mongodb.client = AsyncIOMotorClient(settings.MONGO_URL)
+    ca = certifi.where()
+    mongodb.client = AsyncIOMotorClient(settings.MONGO_URL, tlsCAFile=ca)
     mongodb.db = mongodb.client[settings.DATABASE_NAME]
-    mongodb.sync_client = MongoClient(settings.MONGO_URL)
+    mongodb.sync_client = MongoClient(settings.MONGO_URL, tlsCAFile=ca)
     mongodb.sync_db = mongodb.sync_client[settings.DATABASE_NAME]
 
 async def close_mongo_connection():
